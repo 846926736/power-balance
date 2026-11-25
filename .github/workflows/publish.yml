@@ -18,7 +18,7 @@ jobs:
 
       - name: Import source bundle
         env:
-          SOURCE_URL: https://aka.doubaocdn.com/s/MJ55fwUW1e
+          SOURCE_URL: https://aka.doubaocdn.com/s/lx8urJwEvc
         run: |
           set -e
           curl -L --fail --retry 3 --retry-delay 2 -o /tmp/power-balance-src.tar.gz "$SOURCE_URL"
