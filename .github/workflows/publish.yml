@@ -1,0 +1,54 @@
+
+Enter file contents here
+name: Publish PowerBalance release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Import source bundle
+        env:
+          SOURCE_URL: https://aka.doubaocdn.com/s/MJ55fwUW1e
+        run: |
+          set -e
+          curl -L --fail --retry 3 --retry-delay 2 -o /tmp/power-balance-src.tar.gz "$SOURCE_URL"
+          tar -xzf /tmp/power-balance-src.tar.gz -C .
+          rm -f /tmp/power-balance-src.tar.gz
+
+      - name: Commit imported source
+        run: |
+          set -e
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Import PowerBalance v2.7.2 source"
+            git push origin HEAD:main
+          fi
+
+      - name: Download module zip
+        run: |
+          set -e
+          curl -L --fail --retry 3 --retry-delay 2 -o power-balance-magisk-v2.7.2.zip "https://aka.doubaocdn.com/s/b77qSXFmze"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v2.7.2
+          name: PowerBalance v2.7.2
+          body_path: CHANGELOG.md
+          files: power-balance-magisk-v2.7.2.zip
+          draft: false
+          prerelease: false
