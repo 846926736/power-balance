@@ -21,6 +21,10 @@ jobs:
           SOURCE_URL: https://aka.doubaocdn.com/s/lx8urJwEvc
         run: |
           set -e
+          if [ -f module.prop ]; then
+            echo "Source already imported; skip"
+            exit 0
+          fi
           curl -L --fail --retry 3 --retry-delay 2 -o /tmp/power-balance-src.tar.gz "$SOURCE_URL"
           tar -xzf /tmp/power-balance-src.tar.gz -C .
           rm -f /tmp/power-balance-src.tar.gz
