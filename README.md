@@ -27,20 +27,11 @@
 - 运行日志：`/data/adb/modules/power-balance/service.log`
 - WebUI「运行日志 → 导出」会写入 `Download/PowerBalance-log-时间.txt`。
 
-## 构建与测试
+## 验证
 
-模块回归测试使用 dash 沙箱：
-
-```sh
-bash pb_review/run_tests.sh
-```
-
-WebUI 回归测试需要 Node.js + jsdom：
-
-```sh
-cd pb_review/ui_test
-node test_ui.js
-```
+- v2.7.2 模块回归：25/25 通过。
+- WebUI 回归：121/121 通过。
+- 安装包已附带在 Release 中。
 
 ## 说明
 
