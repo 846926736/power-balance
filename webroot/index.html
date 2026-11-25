@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070a0e">
+<title>续航天平 · 控制台</title>
+<style>
+  :root{
+    --bg:#06080b;
+    --bg2:#0a0e13;
+    --panel:rgba(18,24,31,.86);
+    --panel2:rgba(255,255,255,.045);
+    --line:rgba(255,255,255,.075);
+    --line2:rgba(255,255,255,.12);
+    --text:#eef3f8;
+    --muted:#8e9bab;
+    --dim:#5f6c7c;
+    --accent:#5eead4;
+    --accent2:#38bdf8;
+    --accent-soft:rgba(94,234,212,.12);
+    --gold:#e7c583;
+    --danger:#fb7185;
+    --radius:22px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{min-height:100%;}
+  body{
+    margin:0;background:var(--bg);color:var(--text);
+    font:15px/1.6 -apple-system,"SF Pro Display","HarmonyOS Sans SC","MiSans","PingFang SC","Noto Sans CJK SC",sans-serif;
+    letter-spacing:.01em;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(820px 540px at 90% -10%, rgba(56,189,248,.13), transparent 62%),
+      radial-gradient(760px 500px at -12% 16%, rgba(94,234,212,.11), transparent 60%),
+      radial-gradient(620px 460px at 50% 112%, rgba(231,197,131,.055), transparent 62%),
+      linear-gradient(180deg,#06080b 0%,#070a0e 48%,#06080b 100%);
+  }
+  .wrap{max-width:600px;margin:0 auto;padding:20px 16px 40px;padding:20px 16px calc(40px + env(safe-area-inset-bottom));}
+
+  /* ---------- 顶部品牌 ---------- */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:2px 0 6px;}
+  .brand{display:flex;align-items:center;gap:12px;min-width:0;}
+  .logo{
+    width:44px;height:44px;flex:none;border-radius:15px;display:grid;place-items:center;
+    background:linear-gradient(135deg,rgba(94,234,212,.17),rgba(56,189,248,.07));
+    border:1px solid rgba(94,234,212,.3);
+    box-shadow:0 0 28px rgba(94,234,212,.12),inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .logo svg{width:22px;height:22px;display:block;}
+  .brand-title{font-size:19px;font-weight:650;letter-spacing:.02em;line-height:1.25;}
+  .brand-en{font-size:9.5px;letter-spacing:.18em;color:var(--dim);font-weight:600;margin-left:4px;vertical-align:2px;}
+  .brand-sub{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.45;}
+  .brand-author{margin-top:2px;font-size:10px;color:#8b98a8;letter-spacing:.05em;}
+  .brand-author b{color:#c8d4e2;font-weight:550;}
+  .ver-pill{
+    flex:none;display:inline-flex;align-items:center;gap:6px;
+    font-size:11px;color:#bff7ee;background:rgba(94,234,212,.08);
+    border:1px solid rgba(94,234,212,.24);border-radius:999px;padding:5px 10px;
+    font-variant-numeric:tabular-nums;letter-spacing:.04em;
+  }
+  .ver-pill i{width:5px;height:5px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);}
+  .ro{
+    display:none;margin:12px 0 0;padding:11px 13px;border-radius:14px;
+    background:rgba(231,197,131,.07);border:1px solid rgba(231,197,131,.28);
+    color:#f0d9a9;font-size:12px;line-height:1.55;
+  }
+
+  /* ---------- 卡片 ---------- */
+  .card{
+    position:relative;overflow:hidden;
+    background:linear-gradient(180deg,var(--panel),rgba(10,14,19,.9));
+    border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:0 26px 52px -34px rgba(0,0,0,.9),inset 0 1px 0 rgba(255,255,255,.045);
+    padding:18px;margin-top:14px;
+  }
+  .card::after{
+    content:"";position:absolute;inset:0 22px auto;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(255,255,255,.16),transparent);
+    pointer-events:none;
+  }
+  .section-head{display:flex;align-items:center;gap:11px;margin-bottom:4px;}
+  .s-icon{
+    width:34px;height:34px;flex:none;border-radius:11px;display:grid;place-items:center;
+    background:var(--panel2);border:1px solid var(--line);
+  }
+  .s-icon svg{width:17px;height:17px;display:block;stroke:var(--accent);opacity:.9;}
+  .section-head h2{font-size:14.5px;font-weight:650;margin:0;letter-spacing:.02em;}
+  .section-head p{font-size:11.5px;color:var(--dim);margin:2px 0 0;line-height:1.35;}
+
+  /* ---------- Hero ---------- */
+  .hero{padding:18px 18px 16px;}
+  .hero::before{
+    content:"";position:absolute;width:280px;height:280px;right:-90px;top:-150px;
+    background:radial-gradient(circle,rgba(94,234,212,.16),transparent 66%);
+    pointer-events:none;
+  }
+  .hero-top{display:flex;align-items:center;justify-content:space-between;gap:10px;position:relative;}
+  .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:10.5px;letter-spacing:.16em;color:var(--muted);font-weight:600;}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--dim);flex:none;}
+  .status-dot[data-active="1"]{background:var(--accent);box-shadow:0 0 12px var(--accent);animation:pulse 2.4s ease-in-out infinite;}
+  .policy-chip{
+    font-size:10.5px;color:#c9d6e6;background:rgba(255,255,255,.05);
+    border:1px solid var(--line);border-radius:999px;padding:4px 9px;white-space:nowrap;
+  }
+  .hero-state{
+    position:relative;margin:9px 0 15px;font-size:23px;line-height:1.35;font-weight:650;
+    letter-spacing:.005em;
+    background:linear-gradient(100deg,#d8fff8,#8ff5e4 48%,#7ed3ff);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero-state.stateOff{background:none;color:var(--muted);-webkit-text-fill-color:var(--muted);font-weight:500;}
+  .hero-state.err{background:none;color:var(--danger);-webkit-text-fill-color:var(--danger);font-weight:500;}
+  .hero-main{display:grid;grid-template-columns:126px minmax(0,1fr);gap:20px;align-items:center;position:relative;}
+  .gauge{position:relative;width:126px;height:126px;margin:0 auto;}
+  .gauge svg{width:126px;height:126px;display:block;}
+  .ring-track{fill:none;stroke:rgba(255,255,255,.075);stroke-width:5.5;}
+  #battRing{
+    fill:none;stroke:url(#ringGrad);stroke-width:5.5;stroke-linecap:round;
+    stroke-dasharray:289;stroke-dashoffset:289;
+    transition:stroke-dashoffset .65s cubic-bezier(.22,.7,.25,1),stroke .3s;
+    transform:rotate(-90deg);transform-origin:60px 60px;
+  }
+  #battRing[data-low="1"]{stroke:var(--gold);}
+  .gauge-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;}
+  .gauge-center span{font-size:28px;line-height:1.1;font-weight:700;letter-spacing:-.02em;font-variant-numeric:tabular-nums;}
+  .gauge-center small{font-size:9.5px;letter-spacing:.18em;color:var(--dim);font-weight:600;}
+  .hero-side{display:flex;flex-direction:column;gap:1px;min-width:0;}
+  .metric{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);min-width:0;}
+  .metric:last-child{border-bottom:0;}
+  .metric-label{display:block;font-size:9.5px;letter-spacing:.12em;color:var(--dim);font-weight:600;margin:0;flex:none;}
+  .metric-value{display:block;font-size:12.5px;color:#dbe5f0;font-weight:550;line-height:1.45;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;}
+  .device-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;}
+  .device-chip{
+    display:inline-flex;align-items:baseline;gap:6px;min-width:0;max-width:100%;
+    padding:5px 9px;border-radius:8px;
+    background:rgba(255,255,255,.035);border:1px solid rgba(255,255,255,.06);
+    font-size:10px;color:#a7b8ca;
+  }
+  .device-chip span{flex:none;letter-spacing:.06em;}
+  .device-chip b{
+    font-size:11.5px;color:#dce8f4;font-weight:600;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:190px;
+  }
+  .decision{
+    margin-top:16px;padding:11px 13px;border-radius:14px;
+    background:rgba(255,255,255,.035);border:1px solid var(--line);
+  }
+  .decision-label{font-size:9.5px;letter-spacing:.14em;color:var(--dim);font-weight:600;margin-bottom:3px;}
+  .decision-text{font-size:12px;color:#b7c4d3;line-height:1.55;overflow-wrap:anywhere;}
+
+  /* ---------- 频率视图 ---------- */
+  .data-block{
+    margin-top:11px;padding:12px 13px;border-radius:15px;
+    background:rgba(5,9,13,.5);border:1px solid var(--line);
+  }
+  .data-head{display:flex;align-items:baseline;justify-content:space-between;gap:8px;font-size:10px;letter-spacing:.12em;color:var(--muted);font-weight:600;}
+  .data-head .tag{font-size:9.5px;color:var(--dim);letter-spacing:.04em;font-weight:500;}
+  .data-head .tag.on{color:rgba(94,234,212,.82);}
+  .data-body{
+    margin-top:6px;font:11.5px/1.75 ui-monospace,"SFMono-Regular","Roboto Mono","Noto Sans Mono",monospace;
+    color:#c5d3e2;white-space:pre-wrap;overflow-wrap:anywhere;
+  }
+
+  /* ---------- 设置区 ---------- */
+  .setting{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;
+    padding:14px 0;border-top:1px solid var(--line);
+  }
+  .setting:first-of-type{border-top:0;padding-top:6px;}
+  .setting.stack{display:block;}
+  .setting-text{min-width:0;flex:1;}
+  .setting-name{font-size:14px;font-weight:550;line-height:1.4;}
+  .setting-desc{font-size:11.5px;color:var(--muted);line-height:1.55;margin-top:3px;max-width:430px;}
+  .setting-control{flex:none;display:flex;align-items:center;gap:9px;}
+
+  .switch{position:relative;width:50px;height:30px;flex:none;display:block;}
+  .switch input{position:absolute;inset:0;width:100%;height:100%;margin:0;opacity:0;z-index:2;cursor:pointer;}
+  .slider{
+    position:absolute;inset:0;border-radius:999px;background:rgba(255,255,255,.06);
+    border:1px solid var(--line);transition:background .22s,border-color .22s,box-shadow .22s;
+  }
+  .slider::after{
+    content:"";position:absolute;top:2px;left:2px;width:24px;height:24px;border-radius:50%;
+    background:#7f8b9a;box-shadow:0 2px 7px rgba(0,0,0,.45);
+    transition:left .22s cubic-bezier(.22,.7,.25,1),background .22s,box-shadow .22s;
+  }
+  .switch input:checked + .slider{
+    background:linear-gradient(120deg,rgba(94,234,212,.9),rgba(56,189,248,.85));
+    border-color:rgba(94,234,212,.65);box-shadow:0 0 18px rgba(94,234,212,.18);
+  }
+  .switch input:checked + .slider::after{left:22px;background:#06120f;box-shadow:0 0 0 3px rgba(4,17,14,.18);}
+
+  .seg{
+    display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;padding:3px;
+    background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:12px;
+  }
+  .seg button{
+    appearance:none;border:0;background:transparent;color:var(--muted);
+    padding:7px 9px;border-radius:9px;font-size:12px;font-family:inherit;
+    cursor:pointer;white-space:nowrap;transition:background .18s,color .18s,box-shadow .18s;
+  }
+  .seg button:active{transform:scale(.98);}
+  .seg button.on{
+    color:#eafffb;font-weight:650;
+    background:linear-gradient(135deg,rgba(94,234,212,.22),rgba(56,189,248,.13));
+    box-shadow:inset 0 0 0 1px rgba(94,234,212,.28);
+  }
+
+  .range-box{display:flex;align-items:center;gap:9px;min-width:148px;}
+  input[type="range"]{
+    -webkit-appearance:none;appearance:none;width:100%;min-width:112px;height:26px;
+    margin:0;background:transparent;outline:none;cursor:pointer;--fill:50%;
+  }
+  input[type="range"]::-webkit-slider-runnable-track{
+    height:6px;border-radius:999px;
+    background:linear-gradient(90deg,var(--accent) 0%,var(--accent2) var(--fill,50%),rgba(255,255,255,.085) var(--fill,50%));
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;width:19px;height:19px;margin-top:-6.5px;
+    border-radius:50%;background:linear-gradient(135deg,#d8fff8,#7ce8d6);
+    box-shadow:0 0 0 4px rgba(94,234,212,.13),0 4px 12px rgba(0,0,0,.45);
+  }
+  .val{
+    min-width:46px;text-align:right;font-size:12px;font-weight:650;color:#c3f8ee;
+    font-variant-numeric:tabular-nums;letter-spacing:.02em;
+  }
+
+  .field{width:100%;margin-top:10px;}
+  .field input{
+    width:100%;background:rgba(255,255,255,.04);border:1px solid var(--line);
+    border-radius:12px;padding:10px 12px;color:var(--text);
+    font:12.5px/1.4 inherit;outline:none;transition:border-color .18s,box-shadow .18s,background .18s;
+  }
+  .field input::placeholder{color:var(--dim);}
+  .field input:focus{
+    border-color:rgba(94,234,212,.45);background:rgba(94,234,212,.045);
+    box-shadow:0 0 0 3px rgba(94,234,212,.08);
+  }
+  .btn{
+    appearance:none;border:1px solid var(--line);background:rgba(255,255,255,.045);
+    color:var(--text);border-radius:12px;padding:10px 14px;font:12.5px/1.2 inherit;
+    font-weight:550;cursor:pointer;transition:background .18s,border-color .18s,transform .12s;
+  }
+  .btn:active{transform:scale(.985);}
+  .btn.ghost{width:100%;margin-top:11px;color:#cfe0ee;}
+  .btn.small{padding:8px 12px;font-size:11.5px;white-space:nowrap;}
+  .btn:disabled{opacity:.45;pointer-events:none;}
+
+  .picker{display:none;margin-top:9px;}
+  .app-list{
+    max-height:224px;overflow:auto;border:1px solid var(--line);border-radius:12px;
+    background:rgba(5,9,13,.4);overscroll-behavior:contain;
+  }
+  .app-item{
+    padding:9px 12px;border-bottom:1px solid rgba(255,255,255,.055);
+    font:12px/1.4 ui-monospace,"Roboto Mono",monospace;color:#c7d5e4;cursor:pointer;
+  }
+  .app-item:last-child{border-bottom:0;}
+  .app-item:active{background:rgba(94,234,212,.09);}
+  .app-empty{padding:10px 12px;font-size:11.5px;color:var(--dim);}
+
+  /* ---------- 日志 ---------- */
+  pre#log{
+    margin:12px 0 0;padding:12px 13px;max-height:320px;overflow:auto;
+    background:rgba(4,7,10,.66);border:1px solid var(--line);border-radius:14px;
+    font:11px/1.65 ui-monospace,"SFMono-Regular","Roboto Mono","Noto Sans Mono",monospace;
+    color:#aebdcc;white-space:pre-wrap;word-break:break-all;overscroll-behavior:contain;
+  }
+  .log-actions{display:flex;gap:6px;flex:none;}
+  pre#log::selection{background:rgba(94,234,212,.22);}
+
+  footer{
+    text-align:center;font-size:10.5px;line-height:1.7;color:var(--dim);
+    margin-top:22px;padding-top:16px;border-top:1px solid rgba(255,255,255,.05);
+  }
+  .author-btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    margin:10px 0 7px;padding:8px 16px;border-radius:999px;
+    border:1px solid rgba(94,234,212,.32);background:rgba(94,234,212,.07);
+    color:#c9fff7;text-decoration:none;font-size:11.5px;font-weight:600;
+    letter-spacing:.03em;-webkit-tap-highlight-color:transparent;
+    transition:background .18s,border-color .18s,transform .12s;
+  }
+  .author-btn:active{transform:scale(.97);background:rgba(94,234,212,.14);border-color:rgba(94,234,212,.5);}
+  .author-btn .arrow{color:var(--accent);font-size:12px;line-height:1;}
+  .foot-actions{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px 0 7px;}
+  .foot-actions .author-btn{margin:0;}
+  .donate-btn{
+    cursor:pointer;font-family:inherit;
+    border-color:rgba(231,197,131,.34);background:rgba(231,197,131,.08);color:#f3dfb8;
+  }
+  .donate-btn:active{background:rgba(231,197,131,.15);border-color:rgba(231,197,131,.55);}
+  .donate-btn .heart{color:var(--gold);font-size:13px;line-height:1;}
+
+  /* ---------- 打赏弹窗 ---------- */
+  .modal{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;padding:18px;}
+  .modal.open{display:flex;}
+  .modal-mask{position:absolute;inset:0;background:rgba(2,5,9,.82);backdrop-filter:blur(8px);}
+  .modal-card{
+    position:relative;z-index:1;width:min(360px,100%);max-height:88vh;overflow:auto;
+    padding:16px;border-radius:22px;
+    background:linear-gradient(180deg,#121a23,#090d12);
+    border:1px solid rgba(255,255,255,.13);
+    box-shadow:0 30px 70px -20px rgba(0,0,0,.95),inset 0 1px 0 rgba(255,255,255,.06);
+    overscroll-behavior:contain;
+  }
+  .modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;}
+  .modal-title{margin:0;font-size:16px;font-weight:650;letter-spacing:.02em;color:var(--text);}
+  .modal-sub{margin:3px 0 0;font-size:10.5px;color:var(--dim);}
+  .modal-close{
+    width:30px;height:30px;flex:none;border-radius:50%;border:1px solid var(--line2);
+    background:rgba(255,255,255,.045);color:#b8c6d4;font-size:19px;line-height:1;
+    cursor:pointer;display:grid;place-items:center;padding:0;
+  }
+  .modal-close:active{background:rgba(255,255,255,.1);}
+  .donate-tabs{display:flex;gap:5px;margin-top:13px;padding:3px;border-radius:11px;background:rgba(255,255,255,.035);border:1px solid var(--line);}
+  .donate-tab{
+    flex:1;border:0;border-radius:8px;background:transparent;color:#8e9bab;
+    font:11.5px/1.4 inherit;padding:7px 8px;cursor:pointer;font-family:inherit;
+  }
+  .donate-tab.on{background:rgba(94,234,212,.12);color:#c9fff7;box-shadow:inset 0 0 0 1px rgba(94,234,212,.2);}
+  .donate-panel{margin-top:10px;text-align:center;}
+  .donate-qr-btn{
+    display:block;width:100%;padding:0;border:0;background:transparent;
+    cursor:pointer;-webkit-tap-highlight-color:transparent;
+    transition:transform .12s,filter .12s;
+  }
+  .donate-qr-btn:active{transform:scale(.985);filter:brightness(1.06);}
+  .donate-qr-btn img{display:block;width:100%;height:auto;border-radius:14px;background:#fff;}
+  .donate-panel.hidden{display:none;}
+  .donate-tip{margin:7px 2px 0;text-align:center;font-size:10px;line-height:1.5;color:#9fb0c0;}
+  .donate-note{margin:8px 2px 0;text-align:center;font-size:10px;line-height:1.6;color:var(--dim);}
+
+  /* ---------- Toast ---------- */
+  .toast{
+    position:fixed;left:50%;bottom:22px;bottom:calc(22px + env(safe-area-inset-bottom));z-index:99;
+    transform:translate(-50%,14px);opacity:0;pointer-events:none;
+    background:rgba(10,16,22,.96);border:1px solid rgba(94,234,212,.32);
+    color:#dffbf5;border-radius:999px;padding:9px 16px;font-size:11.5px;
+    box-shadow:0 16px 36px -18px rgba(0,0,0,.9),0 0 18px rgba(94,234,212,.08);
+    transition:opacity .22s,transform .22s;white-space:nowrap;max-width:88vw;overflow:hidden;text-overflow:ellipsis;
+  }
+  .toast.show{opacity:1;transform:translate(-50%,0);}
+  .toast.err{border-color:rgba(251,113,133,.4);color:#ffdbe2;}
+
+  @keyframes pulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(94,234,212,.28);}
+    50%{box-shadow:0 0 0 7px rgba(94,234,212,0);}
+  }
+  @keyframes rise{
+    from{opacity:0;transform:translateY(9px);}
+    to{opacity:1;transform:translateY(0);}
+  }
+  .card{animation:rise .48s cubic-bezier(.22,.7,.25,1) both;}
+  .card:nth-of-type(2){animation-delay:.05s;}
+  .card:nth-of-type(3){animation-delay:.1s;}
+  .card:nth-of-type(4){animation-delay:.14s;}
+  .card:nth-of-type(5){animation-delay:.18s;}
+
+  @media (max-width:420px){
+    .wrap{padding:16px 12px 34px;padding:16px 12px calc(34px + env(safe-area-inset-bottom));}
+    .card{padding:16px;border-radius:20px;}
+    .hero-main{grid-template-columns:112px minmax(0,1fr);gap:14px;}
+    .gauge{width:112px;height:112px;}
+    .gauge svg{width:112px;height:112px;}
+    .gauge-center span{font-size:25px;}
+    .metric-value{font-size:12px;}
+    .hero-state{font-size:20px;}
+    .setting{gap:10px;}
+    .seg button{font-size:11.5px;padding:7px 5px;}
+    .brand-title{font-size:17.5px;}
+    .brand-en{display:none;}
+    .range-box{min-width:128px;}
+    .val{min-width:40px;}
+    .data-body{font-size:11px;}
+  }
+  @media (max-width:420px){
+    .setting{flex-wrap:wrap;}
+    .setting .seg{width:100%;margin-top:9px;}
+    .setting .range-box{width:100%;margin-top:9px;}
+    .setting .range-box input{flex:1;min-width:0;}
+    .setting .range-box .val{min-width:44px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M4 8.5h11.2a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2Z" stroke="#5eead4" stroke-width="1.4"/>
+          <path d="M20.4 10.2v3.6" stroke="#5eead4" stroke-width="1.4" stroke-linecap="round"/>
+          <path d="M6 10.8l2.2 3.2 2-3.2 2 3.2" stroke="#8ff5e4" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="brand-title">续航天平<span class="brand-en">POWERBALANCE</span></div>
+        <div class="brand-sub" id="verLine">正在读取模块状态…</div>
+        <div class="brand-author">作者：<b>酷安@一颗初心</b></div>
+      </div>
+    </div>
+    <div class="ver-pill"><i></i><span id="verBadge">v2.7.2</span></div>
+  </header>
+
+  <div id="roBanner" class="ro">未检测到管理器的命令接口，当前为只读预览。请在 Magisk / KernelSU 的 WebUI 中打开本页才能修改配置。</div>
+
+  <!-- 当前状态 -->
+  <section class="card hero">
+    <div class="hero-top">
+      <div class="eyebrow"><span class="status-dot" id="stateDot" data-active="0"></span>调度状态</div>
+      <span class="policy-chip" id="policyText">均衡 · 电量触发</span>
+    </div>
+    <div class="hero-state" id="stateText">读取中…</div>
+
+    <div class="hero-main">
+      <div class="gauge">
+        <svg viewBox="0 0 120 120" aria-hidden="true">
+          <defs>
+            <linearGradient id="ringGrad" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#5eead4"/>
+              <stop offset="1" stop-color="#38bdf8"/>
+            </linearGradient>
+          </defs>
+          <circle class="ring-track" cx="60" cy="60" r="46"/>
+          <circle id="battRing" cx="60" cy="60" r="46" data-low="0"/>
+        </svg>
+        <div class="gauge-center">
+          <span id="battPct">—</span>
+          <small>BATTERY</small>
+        </div>
+      </div>
+
+      <div class="hero-side">
+        <div class="metric"><span class="metric-label">电池温度</span><span class="metric-value" id="tempText">—</span></div>
+        <div class="metric"><span class="metric-label">屏幕</span><span class="metric-value" id="screenText">—</span></div>
+        <div class="metric"><span class="metric-label">电源状态</span><span class="metric-value" id="battText">—</span></div>
+        <div class="metric"><span class="metric-label">省电累计</span><span class="metric-value" id="statsText">读取中…</span></div>
+      </div>
+    </div>
+
+    <div class="device-meta">
+      <div class="device-chip"><span>机型</span><b id="deviceModel">—</b></div>
+      <div class="device-chip"><span>处理器</span><b id="deviceSoc">—</b></div>
+    </div>
+
+    <div class="decision">
+      <div class="decision-label">最近决策</div>
+      <div class="decision-text" id="reasonText">—</div>
+    </div>
+  </section>
+
+  <!-- 频率视图 -->
+  <section class="card">
+    <div class="section-head">
+      <div class="s-icon">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M4 17V9m5 8V5m5 12v-7m5 7V7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div><h2>频率视图</h2><p>当前频率与省电上限的实时对照</p></div>
+    </div>
+    <div class="data-block">
+      <div class="data-head"><span>CPU 集群</span><span class="tag">当前 / 上限 / 硬件</span></div>
+      <div class="data-body" id="freqText">—</div>
+    </div>
+    <div class="data-block">
+      <div class="data-head"><span>GPU 设备</span><span class="tag on" id="gpuTag">✓ 已纳入 · 当前 / 上限</span></div>
+      <div class="data-body" id="gpuText">—</div>
+    </div>
+  </section>
+
+  <!-- 核心设置 -->
+  <section class="card">
+    <div class="section-head">
+      <div class="s-icon">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M12 3v3m0 12v3M3 12h3m12 0h3M5.6 5.6l2.1 2.1m8.6 8.6l2.1 2.1m0-12.8l-2.1 2.1M7.7 16.3l-2.1 2.1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="12" cy="12" r="3.4" stroke="currentColor" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div><h2>核心控制</h2><p>总开关、触发方式与省电力度</p></div>
+    </div>
+
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-name">启用模块</div>
+        <div class="setting-desc">停用后立即按原值还原全部改动</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="enabled"><span class="slider"></span></label>
+    </div>
+
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-name">触发模式</div>
+        <div class="setting-desc">电量触发带滞回；一直省电适合挂机</div>
+      </div>
+      <div class="seg" id="mode">
+        <button data-v="battery">电量</button>
+        <button data-v="always">常省</button>
+        <button data-v="off">关闭</button>
+      </div>
+    </div>
+
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-name">省电力度</div>
+        <div class="setting-desc">轻度 / 均衡 / 激进，逐档加深</div>
+      </div>
+      <div class="seg" id="level">
+        <button data-v="light">轻度</button>
+        <button data-v="balanced">均衡</button>
+        <button data-v="extreme">激进</button>
+      </div>
+    </div>
+
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-name">电量阈值</div>
+        <div class="setting-desc">低于该值且未充电时进入省电，回升到阈值 +5 或充电时退出</div>
+      </div>
+      <div class="range-box">
+        <input type="range" id="threshold" min="5" max="80" step="1" aria-label="电量阈值">
+        <span class="val" id="thresholdVal">30%</span>
+      </div>
+    </div>
+
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-name">息屏省电</div>
+        <div class="setting-desc">息屏时也应用省电，无视电量与充电；后台任务会变慢</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="screen_off_save"><span class="slider"></span></label>
+    </div>
+  </section>
+
+  <!-- 自动化 -->
+  <section class="card">
+    <div class="section-head">
+      <div class="s-icon">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M13 2.8L5.8 13h5.1L11 21.2l7.2-10.2h-5.1L13 2.8Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div><h2>自动加深</h2><p>高温与低电量时的保护策略</p></div>
+    </div>
+
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-name">高温保护</div>
+        <div class="setting-desc">电池 ≥45℃ 自动切激进档，&lt;43℃ 恢复；优先于排除名单</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="thermal_boost"><span class="slider"></span></label>
+    </div>
+
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-name">低电量加深</div>
+        <div class="setting-desc">电量 ≤15% 自动升一档，≥20% 恢复；充电时不生效</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="batt_boost"><span class="slider"></span></label>
+    </div>
+
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-name">切换调度器</div>
+        <div class="setting-desc">省电时换保守 / 省电型调度器，更省电但升频慢；默认只降频</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="gov_switch"><span class="slider"></span></label>
+    </div>
+
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-name">激进档下线大核</div>
+        <div class="setting-desc">个别机型关核可能影响基带 / WiFi，默认关闭</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="core_off"><span class="slider"></span></label>
+    </div>
+  </section>
+
+  <!-- GPU -->
+  <section class="card">
+    <div class="section-head">
+      <div class="s-icon">
+        <svg viewBox="0 0 24 24" fill="none">
+          <rect x="5" y="5" width="14" height="14" rx="3" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M9 9h6v6H9zM2.8 9.5H5m-2.2 5H5m14 0h2.2m-2.2-5h2.2M9.5 2.8V5m5-2.2V5m0 14v2.2m-5-2.2v2.2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div><h2>GPU 天平</h2><p>省电时同步限制 GPU 最高频率</p></div>
+    </div>
+
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-name">纳入 GPU 限频</div>
+        <div class="setting-desc">轻度 90% / 均衡 70% / 激进压到最低档；自动识别 kgsl、Mali、g3d、gpufreq 等命名，识别不到自动跳过</div>
+      </div>
+      <label class="switch"><input type="checkbox" id="gpu_save"><span class="slider"></span></label>
+    </div>
+
+    <div class="setting stack">
+      <div class="setting-text">
+        <div class="setting-name">GPU 设备手动指定</div>
+        <div class="setting-desc">留空 = 自动识别。可从上方「GPU 设备」抄设备名填入，逗号分隔，支持通配符（如 *mali*）</div>
+      </div>
+      <div class="field"><input type="text" id="gpu_devices" placeholder="留空自动识别" inputmode="text" autocomplete="off" spellcheck="false"></div>
+    </div>
+  </section>
+
+  <!-- 高级 -->
+  <section class="card">
+    <div class="section-head">
+      <div class="s-icon">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <circle cx="9" cy="7" r="2.1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <circle cx="15" cy="12" r="2.1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <circle cx="8" cy="17" r="2.1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        </svg>
+      </div>
+      <div><h2>高级与排除</h2><p>轮询节奏与前台白名单</p></div>
+    </div>
+
+    <div class="setting">
+      <div class="setting-text">
+        <div class="setting-name">轮询间隔</div>
+        <div class="setting-desc">每次检查的间隔；纯 sysfs 读取，开销极小</div>
+      </div>
+      <div class="range-box">
+        <input type="range" id="poll" min="30" max="300" step="5" aria-label="轮询间隔">
+        <span class="val" id="pollVal">60s</span>
+      </div>
+    </div>
+
+    <div class="setting stack">
+      <div class="setting-text">
+        <div class="setting-name">前台排除名单</div>
+        <div class="setting-desc">包名用空格分隔。这些 App 在前台时绝不降频，已降频会立即还原</div>
+      </div>
+      <div class="field"><input type="text" id="exclude" placeholder="如 com.xx.game" inputmode="text" autocomplete="off" spellcheck="false"></div>
+      <button class="btn ghost" id="pickApp" type="button">从已装第三方应用中选择</button>
+      <div class="picker" id="appPicker">
+        <div class="field" style="margin-top:8px;"><input type="text" id="appSearch" placeholder="搜索包名…" autocomplete="off" spellcheck="false"></div>
+        <div class="app-list" id="appList"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 日志 -->
+  <section class="card">
+    <div class="section-head">
+      <div class="s-icon">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M4 6.5l4 3-4 3M10 15h9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <rect x="2.5" y="3.5" width="19" height="17" rx="3" stroke="currentColor" stroke-width="1.3"/>
+        </svg>
+      </div>
+      <div style="flex:1;"><h2>运行日志</h2><p>尾部 60 行 · 30 秒刷新</p></div>
+      <div class="log-actions">
+        <button class="btn small" id="exportLog" type="button">导出</button>
+        <button class="btn small" id="refreshAll" type="button">刷新</button>
+      </div>
+    </div>
+    <pre id="log">（正在读取日志…）</pre>
+  </section>
+
+  <footer>
+    <div>续航天平 PowerBalance · 作者：酷安@一颗初心</div>
+    <div class="foot-actions">
+      <a class="author-btn" id="authorLink" href="https://www.coolapk.com/u/1361950" target="_blank" rel="noopener">访问作者主页<span class="arrow">↗</span></a>
+      <button class="author-btn donate-btn" id="donateBtn" type="button">打赏作者<span class="heart">♥</span></button>
+    </div>
+    <div>所有改动可逆，停用或卸载时按原值还原</div>
+  </footer>
+</div>
+
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<div id="donateModal" class="modal" aria-hidden="true">
+  <div class="modal-mask" data-close="1"></div>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="donateTitle">
+    <div class="modal-head">
+      <div>
+        <h3 class="modal-title" id="donateTitle">支持作者</h3>
+        <p class="modal-sub">扫码打赏，请作者喝杯咖啡</p>
+      </div>
+      <button class="modal-close" id="donateClose" type="button" aria-label="关闭打赏弹窗">×</button>
+    </div>
+    <div class="donate-tabs" role="tablist" aria-label="打赏方式">
+      <button class="donate-tab on" type="button" role="tab" aria-selected="true" data-pay="alipay">支付宝</button>
+      <button class="donate-tab" type="button" role="tab" aria-selected="false" data-pay="wechat">微信</button>
+    </div>
+    <div class="donate-panel" id="donateAlipay">
+      <button class="donate-qr-btn" type="button" data-pay="alipay" aria-label="点按打开支付宝打赏">
+        <img src="assets/alipay.webp" alt="支付宝打赏二维码" loading="lazy">
+      </button>
+      <p class="donate-tip">点按二维码直接打开支付宝</p>
+    </div>
+    <div class="donate-panel hidden" id="donateWechat">
+      <button class="donate-qr-btn" type="button" data-pay="wechat" aria-label="尝试打开微信打赏">
+        <img src="assets/wechat.webp" alt="微信打赏二维码" loading="lazy">
+      </button>
+      <p class="donate-tip">点按尝试打开微信；个人码受限时请长按保存后扫一扫</p>
+    </div>
+    <p class="donate-note">打赏完全自愿，不影响任何模块功能。</p>
+  </div>
+</div>
+
+<script>
+"use strict";
+var CONF = "/data/adb/modules/power-balance/config";
+var LOG  = "/data/adb/modules/power-balance/service.log";
+var STATE = "/data/adb/modules/power-balance/state";
+var STATS = "/data/adb/modules/power-balance/stats";
+
+/* ---- 管理器命令桥：探测可用接口；找不到则只读 ---- */
+var bridge = (typeof ksu !== "undefined" && ksu && typeof ksu.exec === "function") ? ksu
+           : (typeof KernelSU !== "undefined" && KernelSU && typeof KernelSU.exec === "function") ? KernelSU
+           : null;
+
+function runSh(cmd){
+  return new Promise(function(resolve){
+    if(!bridge){ resolve(null); return; }
+    var settled = false;
+    function done(r){ if(!settled){ settled = true; resolve(r); } }
+    try{
+      var cbName = "__pscb" + Math.floor(Math.random()*1e9);
+      window[cbName] = function(errno, stdout, stderr){ delete window[cbName]; done({errno:errno, stdout:stdout, stderr:stderr}); };
+      var ret = bridge.exec(cmd, null, cbName);
+      if(ret && typeof ret.then === "function"){
+        ret.then(function(r){ delete window[cbName];
+          if(r && typeof r === "object"){ done(r); } else { done({errno:0, stdout:String(r)}); }
+        }, function(){ delete window[cbName]; done(null); });
+      }
+    }catch(e){ done(null); }
+  });
+}
+
+/* ---- 值校验：所有写操作只允许枚举 / 夹紧后的数字 ---- */
+var ENUMS = {
+  mode:   {v:["battery","always","off"], d:"battery"},
+  level:  {v:["light","balanced","extreme"], d:"balanced"}
+};
+function clampInt(x, lo, hi, d){
+  x = parseInt(x, 10);
+  if(!isFinite(x)) return d;
+  if(x < lo) return lo;
+  if(x > hi) return hi;
+  return x;
+}
+function cleanVal(key, v){
+  if(ENUMS[key]) return ENUMS[key].v.indexOf(v) >= 0 ? v : ENUMS[key].d;
+  if(key === "enabled" || key === "core_off" || key === "screen_off_save" || key === "gov_switch" || key === "thermal_boost" || key === "batt_boost" || key === "gpu_save")
+    return (v === 1 || v === "1" || v === true) ? 1 : 0;
+  if(key === "threshold") return clampInt(v, 5, 80, 30);
+  if(key === "poll") return clampInt(v, 30, 300, 60);
+  if(key === "exclude") {
+    return String(v).split(/[^A-Za-z0-9_.]+/).filter(function(x){ return x.length > 0; }).join(" ");
+  }
+  if(key === "gpu_devices") {
+    return String(v).replace(/\s+/g, "").split(",").filter(function(x){ return /^[A-Za-z0-9_.?*-]+$/.test(x); }).join(",");
+  }
+  return null;
+}
+
+var cfg = {enabled:1, mode:"battery", level:"balanced", threshold:30, poll:60, core_off:0, screen_off_save:0, gov_switch:0, thermal_boost:1, batt_boost:1, gpu_save:1, gpu_devices:"", exclude:""};
+var lastHero = null;
+function rememberHero(){
+  var t = el("stateText"), d = el("stateDot");
+  lastHero = { text: t.textContent, cls: t.className, dot: d.getAttribute("data-active") || "0" };
+}
+function restoreHero(){
+  if(!lastHero) return;
+  el("stateText").textContent = lastHero.text;
+  el("stateText").className = lastHero.cls;
+  el("stateDot").setAttribute("data-active", lastHero.dot);
+}
+
+function parseConfig(text){
+  var c = {};
+  var lines = String(text).split("\n");
+  for(var i=0;i<lines.length;i++){
+    var l = lines[i].replace(/#.*$/,"");
+    var eq = l.indexOf("=");
+    if(eq <= 0) continue;
+    var k = l.slice(0, eq).trim();
+    var v = l.slice(eq+1).trim();
+    if(k) c[k] = v;
+  }
+  cfg.enabled   = c.enabled   === "0" ? 0 : 1;
+  cfg.mode      = cleanVal("mode", c.mode || "battery");
+  cfg.level     = cleanVal("level", c.level || "balanced");
+  cfg.threshold = clampInt(c.threshold, 5, 80, 30);
+  cfg.poll      = clampInt(c.poll, 30, 300, 60);
+  cfg.core_off  = c.core_off === "1" ? 1 : 0;
+  cfg.screen_off_save = c.screen_off_save === "1" ? 1 : 0;
+  cfg.gov_switch = c.gov_switch === "1" ? 1 : 0;
+  cfg.thermal_boost = c.thermal_boost === "0" ? 0 : 1;
+  cfg.batt_boost = c.batt_boost === "0" ? 0 : 1;
+  cfg.gpu_save = c.gpu_save === "0" ? 0 : 1;
+  cfg.gpu_devices = cleanVal("gpu_devices", c.gpu_devices || "");
+  cfg.exclude = cleanVal("exclude", c.exclude || "");
+}
+
+function el(id){ return document.getElementById(id); }
+
+function paintRange(id, outId, suffix){
+  var inp = el(id), out = el(outId);
+  if(!inp || !out) return;
+  var min = Number(inp.min), max = Number(inp.max), v = Number(inp.value);
+  var pct = (max > min) ? ((v - min) / (max - min)) * 100 : 0;
+  if(pct < 0) pct = 0;
+  if(pct > 100) pct = 100;
+  inp.style.setProperty("--fill", pct.toFixed(1) + "%");
+  out.textContent = String(v) + (suffix || "");
+}
+
+function trimNum(x){
+  var s = (x >= 10 ? x.toFixed(1) : x.toFixed(2));
+  return s.replace(/0+$/,"").replace(/\.$/,"");
+}
+function fmtKHz(v){
+  if(!/^\d+$/.test(v)) return "—";
+  var n = parseInt(v,10);
+  if(n >= 1000000) return trimNum(n / 1000000) + " GHz";
+  if(n >= 1000) return Math.round(n / 1000) + " MHz";
+  return n + " kHz";
+}
+function fmtHz(v){
+  if(!/^\d+$/.test(v)) return "—";
+  var n = parseInt(v,10);
+  if(n >= 1000000000) return trimNum(n / 1000000000) + " GHz";
+  if(n >= 1000000) return Math.round(n / 1000000) + " MHz";
+  if(n >= 1000) return Math.round(n / 1000) + " kHz";
+  return n + " Hz";
+}
+
+function renderCfg(force){
+  el("enabled").checked = cfg.enabled === 1;
+  el("core_off").checked = cfg.core_off === 1;
+  el("screen_off_save").checked = cfg.screen_off_save === 1;
+  el("gov_switch").checked = cfg.gov_switch === 1;
+  el("thermal_boost").checked = cfg.thermal_boost === 1;
+  el("batt_boost").checked = cfg.batt_boost === 1;
+  el("gpu_save").checked = cfg.gpu_save === 1;
+  if(force || document.activeElement !== el("gpu_devices")) el("gpu_devices").value = cfg.gpu_devices;
+  if(force || document.activeElement !== el("exclude")) el("exclude").value = cfg.exclude;
+  if(force || document.activeElement !== el("threshold")) el("threshold").value = cfg.threshold;
+  if(force || document.activeElement !== el("poll")) el("poll").value = cfg.poll;
+  paintRange("threshold", "thresholdVal", "%");
+  paintRange("poll", "pollVal", "s");
+  ["mode","level"].forEach(function(k){
+    var btns = el(k).querySelectorAll("button");
+    for(var i=0;i<btns.length;i++){
+      btns[i].className = btns[i].getAttribute("data-v") === cfg[k] ? "on" : "";
+    }
+  });
+  var modeCn = {battery:"电量触发", always:"始终省电", off:"关闭动作"};
+  var lvlCn = {light:"轻度", balanced:"均衡", extreme:"激进"};
+  el("policyText").textContent = (lvlCn[cfg.level] || cfg.level) + " · " + (modeCn[cfg.mode] || cfg.mode);
+  el("gpuTag").textContent = cfg.gpu_save ? "✓ 已纳入 · 当前 / 上限" : "未纳入 · 当前 / 上限";
+  el("gpuTag").className = "tag" + (cfg.gpu_save ? " on" : "");
+}
+
+var toastTimer = null;
+function toast(msg, bad){
+  var t = el("toast");
+  if(!t) return;
+  t.textContent = msg;
+  t.className = "toast show" + (bad ? " err" : "");
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.className = "toast"; }, 2200);
+}
+
+function setBusy(b){
+  var btn = el("refreshAll");
+  if(btn) btn.disabled = !!b;
+}
+
+async function writeCfg(key, value){
+  var v = cleanVal(key, value);
+  if(v === null) return;
+  /* v 已经过 cleanVal 白名单净化（枚举 / 数字 / 包名 / 设备名），可安全内插。
+     末尾用 grep 校验写入结果，errno 才能真实反映成败。 */
+  var cmd = "f=" + CONF + "; if grep -q '^" + key + "=' $f; then sed -i 's@" + key + "=.*@" + key + "=" + v + "@' $f; else echo '" + key + "=" + v + "' >> $f; fi; grep -q '^" + key + "=" + v + "$' $f";
+  setBusy(true);
+  try{
+    var r = await runSh(cmd);
+    var bad = (r === null) || (r && typeof r.errno === "number" && r.errno !== 0);
+    if(bad){
+      var msg = (r === null) ? "写入失败：无命令接口" : ("写入失败（errno " + r.errno + "）");
+      toast(msg, true);
+      el("stateText").textContent = "写入失败";
+      el("stateText").className = "hero-state err";
+      el("stateDot").setAttribute("data-active", "0");
+      renderCfg(true);
+      return;
+    }
+    cfg[key] = v;
+    if(key === "threshold" || key === "poll" || key === "gpu_devices" || key === "exclude") el(key).value = v;
+    renderCfg();
+    restoreHero();
+    toast("已保存，下一次轮询生效");
+  }finally{
+    setBusy(false);
+  }
+}
+
+/* ---- 作者主页跳转：优先酷安 App 深链，失败再回退浏览器 ---- */
+var AUTHOR_URL = "https://www.coolapk.com/u/1361950";
+var AUTHOR_SCHEME = "coolapk://www.coolapk.com/u/1361950";
+var COOLAPK_PKG = "com.coolapk.market";
+function authorCmd(){
+  /* 酷安装着就先走 App 的 coolapk:// 路由；App 不接这个链接时，
+     再用 https 指定包名拉起；仍失败才交给系统浏览器。 */
+  var appScheme = "am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -d '" + AUTHOR_SCHEME + "' -p " + COOLAPK_PKG + " -f 0x10000000 >/dev/null 2>&1";
+  var appLink = "am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -d '" + AUTHOR_URL + "' -p " + COOLAPK_PKG + " -f 0x10000000 >/dev/null 2>&1";
+  var browser = "am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -d '" + AUTHOR_URL + "' -f 0x10000000 >/dev/null 2>&1";
+  return "if pm path " + COOLAPK_PKG + " >/dev/null 2>&1; then " + appScheme + " || " + appLink + " || " + browser + "; else " + browser + "; fi";
+}
+function openAuthor(e){
+  if(e && e.preventDefault) e.preventDefault();
+  if(bridge){
+    runSh(authorCmd());
+    toast("正在打开作者主页");
+    return;
+  }
+  if(window.open){ window.open(AUTHOR_URL, "_blank"); }
+  else { location.href = AUTHOR_URL; }
+}
+el("authorLink").addEventListener("click", openAuthor);
+
+/* ---- 打赏弹窗 ---- */
+var donateModal = el("donateModal");
+var donateBtn = el("donateBtn");
+function openDonate(){
+  if(!donateModal) return;
+  donateModal.classList.add("open");
+  donateModal.setAttribute("aria-hidden","false");
+  document.body.style.overflow = "hidden";
+}
+function closeDonate(){
+  if(!donateModal) return;
+  donateModal.classList.remove("open");
+  donateModal.setAttribute("aria-hidden","true");
+  document.body.style.overflow = "";
+}
+if(donateBtn) donateBtn.addEventListener("click", openDonate);
+if(el("donateClose")) el("donateClose").addEventListener("click", closeDonate);
+if(donateModal) donateModal.addEventListener("click", function(e){
+  if(e.target && e.target.getAttribute("data-close") === "1") closeDonate();
+});
+var donateTabs = document.querySelectorAll(".donate-tab");
+for(var i = 0; i < donateTabs.length; i++){
+  (function(tab){
+    tab.addEventListener("click", function(){
+      var pay = tab.getAttribute("data-pay");
+      for(var j = 0; j < donateTabs.length; j++){
+        var on = donateTabs[j] === tab;
+        donateTabs[j].classList.toggle("on", on);
+        donateTabs[j].setAttribute("aria-selected", on ? "true" : "false");
+      }
+      if(el("donateAlipay")) el("donateAlipay").classList.toggle("hidden", pay !== "alipay");
+      if(el("donateWechat")) el("donateWechat").classList.toggle("hidden", pay !== "wechat");
+    });
+  })(donateTabs[i]);
+}
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape" && donateModal && donateModal.classList.contains("open")) closeDonate();
+});
+
+/* ---- 打赏码：点按优先拉起支付宝/微信 ---- */
+var DONATE_LINKS = {
+  alipay: {
+    qr: "https://qr.alipay.com/fkx13197dbqmmlttlwsrv60",
+    scheme: "alipays://platformapi/startapp?saId=10000007&qrcode=" + encodeURIComponent("https://qr.alipay.com/fkx13197dbqmmlttlwsrv60?_s=web-other"),
+    pkg: "com.eg.android.AlipayGphone"
+  },
+  wechat: {
+    qr: "wxp://f2f00jCRP_1L-X6KZ8J99F5C4lZiQmidYZ6qPy8C8AqtnI59Uym7Y8lPH7A1j2nzP-9C",
+    scheme: "wxp://f2f00jCRP_1L-X6KZ8J99F5C4lZiQmidYZ6qPy8C8AqtnI59Uym7Y8lPH7A1j2nzP-9C",
+    pkg: "com.tencent.mm"
+  }
+};
+function donateCmd(pay){
+  var d = DONATE_LINKS[pay];
+  if(!d) return "";
+  var openScheme = "am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -d '" + d.scheme + "' -p " + d.pkg + " -f 0x10000000 >/dev/null 2>&1";
+  var openLink = "am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -d '" + d.qr + "' -p " + d.pkg + " -f 0x10000000 >/dev/null 2>&1";
+  var browser = "am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -d '" + d.qr + "' -f 0x10000000 >/dev/null 2>&1";
+  if(pay === "alipay"){
+    /* 支付宝：先官方 saId=10000007 扫码路由（带 qrcode 参数），
+       再试 https + 包名，最后才交给浏览器。 */
+    return "if pm path " + d.pkg + " >/dev/null 2>&1; then " + openScheme + " || " + openLink + " || " + browser + "; else " + browser + "; fi";
+  }
+  /* 微信个人收款码是 wxp://，微信不接受外部直接拉起时只能提示保存后扫码。 */
+  return openScheme;
+}
+async function openDonatePay(pay){
+  var d = DONATE_LINKS[pay];
+  if(!d) return;
+  if(!bridge){
+    if(pay === "alipay" && window.open){ window.open(d.qr, "_blank"); }
+    else { toast("桌面环境不支持直接打开，请长按保存二维码", true); }
+    return;
+  }
+  var r = await runSh(donateCmd(pay));
+  if(!r || (typeof r.errno === "number" && r.errno !== 0)){
+    toast(pay === "wechat" ? "微信个人码不能直接跳转，请长按保存后用微信扫一扫" : "打开支付宝失败，请长按保存二维码", true);
+    return;
+  }
+  toast(pay === "wechat" ? "正在尝试打开微信" : "正在打开支付宝");
+}
+var donateCodes = document.querySelectorAll(".donate-qr-btn");
+for(var k = 0; k < donateCodes.length; k++){
+  (function(btn){
+    btn.addEventListener("click", function(){ openDonatePay(btn.getAttribute("data-pay")); });
+  })(donateCodes[k]);
+}
+
+/* ---- 状态读取合并：一次 root shell 拿齐全部信息 ---- */
+function buildStatusScript(){
+  var M = "/data/adb/modules/power-balance";
+  return [
+    'echo "@CONF@"; cat ' + M + '/config 2>/dev/null',
+    'echo "@STATE@"; cat ' + M + '/state 2>/dev/null',
+    'echo "@STATS@"; cat ' + M + '/stats 2>/dev/null',
+    'echo "@CAP@"; cat /sys/class/power_supply/battery/capacity 2>/dev/null',
+    'echo "@BST@"; bst=$(cat /sys/class/power_supply/battery/status 2>/dev/null | sed -e "s/^[[:space:]]*//" -e "s/[[:space:]]*$//"); case "$bst" in ""|Unknown|unknown|1) bst=$(dumpsys battery 2>/dev/null | sed -n "s/.*status: *//p" | head -n1);; esac; case "$bst" in ""|Unknown|unknown|1) online=""; for ps in usb charger ac wireless; do p="/sys/class/power_supply/$ps"; [ -r "$p/online" ] || continue; v=$(cat "$p/online" 2>/dev/null | sed -e "s/^[[:space:]]*//" -e "s/[[:space:]]*$//"); case "$v" in 1) online=1; break;; 0) [ -z "$online" ] && online=0;; esac; done; [ "$online" = 1 ] && bst=Mains; [ "$online" = 0 ] && bst=Unplugged;; esac; echo "$bst"',
+    'echo "@TMP@"; cat /sys/class/power_supply/battery/temp 2>/dev/null',
+    'echo "@CPU@"; for d in /sys/devices/system/cpu/cpufreq/policy*/; do [ -d "$d" ] || continue; echo "$(basename "$d") $(cat "${d}scaling_cur_freq" 2>/dev/null)/$(cat "${d}scaling_max_freq" 2>/dev/null)/$(cat "${d}cpuinfo_max_freq" 2>/dev/null)"; done',
+    'echo "@GPU@"; for d in /sys/class/devfreq/*/; do [ -d "$d" ] || continue; echo "$(basename "$d") $(cat "${d}cur_freq" 2>/dev/null)/$(cat "${d}max_freq" 2>/dev/null)"; done',
+    'echo "@FB@"; cat /sys/class/graphics/fb0/blank 2>/dev/null',
+    'echo "@DRM@"; cat /sys/class/drm/card0-DSI-1/enabled 2>/dev/null',
+    'echo "@DEV@"; db=$(getprop ro.product.brand 2>/dev/null); [ -n "$db" ] || db=$(getprop ro.product.manufacturer 2>/dev/null); dm=$(getprop ro.product.marketname 2>/dev/null); [ -n "$dm" ] || dm=$(getprop ro.vendor.oplus.market.name 2>/dev/null); [ -n "$dm" ] || dm=$(getprop ro.product.model 2>/dev/null); ds=$(getprop ro.soc.model 2>/dev/null); [ -n "$ds" ] || ds=$(getprop ro.board.platform 2>/dev/null); [ -n "$ds" ] || ds=$(getprop ro.hardware 2>/dev/null); [ -n "$ds" ] || ds=$(grep "Hardware" /proc/cpuinfo 2>/dev/null | head -n1 | sed "s/.*: //"); dc=$(ls -d /sys/devices/system/cpu/cpu[0-9]* 2>/dev/null | wc -l | tr -d " "); echo "$db|$dm|$ds|$dc"',
+    "echo \"@VER@\"; grep '^version=' " + M + "/module.prop 2>/dev/null",
+    'echo "@UPT@"; cat /proc/uptime 2>/dev/null',
+    'echo "@LOG@"; tail -n 60 ' + M + '/service.log 2>/dev/null'
+  ].join("; ");
+}
+
+function parseSections(text){
+  var out = {};
+  var cur = null;
+  var lines = String(text == null ? "" : text).split("\n");
+  for(var i=0;i<lines.length;i++){
+    var m = /^@([A-Z]+)@\s*$/.exec(lines[i]);
+    if(m){ cur = m[1]; out[cur] = ""; continue; }
+    if(cur){
+      if(out[cur] !== "") out[cur] += "\n";
+      out[cur] += lines[i];
+    }
+  }
+  return out;
+}
+
+async function doRefresh(){
+  var r = bridge ? await runSh(buildStatusScript()) : null;
+  if(bridge && r === null){
+    el("stateText").textContent = "命令执行失败";
+    el("stateText").className = "hero-state err";
+    el("stateDot").setAttribute("data-active", "0");
+    return;
+  }
+  var S = (r && r.stdout) ? parseSections(r.stdout) : {};
+  var conf = ("CONF" in S) ? S.CONF : null;
+  var st = ("STATE" in S) ? S.STATE : null;
+  var stats = ("STATS" in S) ? S.STATS : null;
+  var bt = ("CAP" in S) ? S.CAP : null;
+  var bs = ("BST" in S) ? S.BST : null;
+  var tp = ("TMP" in S) ? S.TMP : null;
+  var fq = ("CPU" in S) ? S.CPU : null;
+  var gq = ("GPU" in S) ? S.GPU : null;
+  var scrFb = ("FB" in S) ? S.FB : null;
+  var scrDrm = ("DRM" in S) ? S.DRM : null;
+  var dev = ("DEV" in S) ? S.DEV : null;
+  var ver = ("VER" in S) ? S.VER : null;
+  var lg = ("LOG" in S) ? S.LOG : null;
+  var vv = ver ? ver.replace(/^version=/,"").trim() : "";
+  if(vv) el("verBadge").textContent = vv;
+  el("verLine").textContent = vv
+    ? "CPU / GPU 双天平 · 下轮生效"
+    : (bridge ? "版本读取失败 · 下轮生效" : "只读预览 · 在管理器 WebUI 中打开可修改");
+
+  var reason = "—";
+  if(lg){
+    var ll = String(lg).split("\n");
+    for(var i = ll.length - 1; i >= 0; i--){
+      if(/ -> |applied level=|drift:|excluded|stale state/.test(ll[i])){
+        reason = ll[i].replace(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2} /, "");
+        break;
+      }
+    }
+  }
+  el("reasonText").textContent = reason;
+
+  var statParts = stats ? String(stats).trim().split(/\s+/) : [];
+  if(statParts.length >= 2 && /^\d+$/.test(statParts[0]) && /^\d+$/.test(statParts[1])){
+    var totalSec = parseInt(statParts[0],10), entries = parseInt(statParts[1],10);
+    if(statParts.length >= 3 && /^\d+$/.test(statParts[2]) && ("UPT" in S)){
+      var nowUp = S.UPT ? parseInt(String(S.UPT).trim(),10) : 0;
+      var lastUp = parseInt(statParts[2],10);
+      if(nowUp >= lastUp && nowUp > 0) totalSec += nowUp - lastUp;
+    }
+    var hrs = Math.floor(totalSec / 3600), mins = Math.floor((totalSec % 3600) / 60);
+    el("statsText").textContent = (hrs > 0 ? hrs + "时" : "") + mins + "分 · " + entries + "次";
+  }else{
+    el("statsText").textContent = "0分 · 0次";
+  }
+
+  if(bridge && conf === null){
+    el("stateText").textContent = "命令执行失败";
+    el("stateText").className = "hero-state err";
+    el("stateDot").setAttribute("data-active", "0");
+    return;
+  }
+  if(!bridge){
+    el("roBanner").style.display = "block";
+    el("stateText").textContent = "只读预览";
+    el("stateText").className = "hero-state stateOff";
+    el("stateDot").setAttribute("data-active", "0");
+  }else{
+    var lvl = "";
+    var tags = "";
+    if(st){
+      var ls = String(st).split("\n");
+      if(ls.length >= 2 && ls[1]) lvl = ls[1].trim();
+      for(var fi=0; fi<ls.length; fi++){
+        if(ls[fi].indexOf("flags") === 0){
+          if(ls[fi].indexOf("thermal") >= 0) tags += " · 高温";
+          if(ls[fi].indexOf("batt") >= 0) tags += " · 低电量";
+          break;
+        }
+      }
+    }
+    var names = {light:"轻度", balanced:"均衡", extreme:"激进"};
+    el("stateText").textContent = lvl ? ("省电中 · " + (names[lvl] || lvl) + tags) : "未激活 · 系统原样";
+    el("stateText").className = "hero-state" + (lvl ? "" : " stateOff");
+    el("stateDot").setAttribute("data-active", lvl ? "1" : "0");
+    rememberHero();
+  }
+
+  var cap = bt ? String(bt).trim() : "";
+  var stat = bs ? String(bs).trim() : "";
+  var statCn = {Charging:"充电中", Discharging:"放电中", Full:"已充满", "Not charging":"未充电", Mains:"已连接电源", Unplugged:"未接电源", Unknown:"未知", 1:"未知", 2:"充电中", 3:"放电中", 4:"未充电", 5:"已充满"}[stat] || stat;
+  var capNum = /^\d+$/.test(cap) ? parseInt(cap,10) : -1;
+  el("battPct").textContent = capNum >= 0 ? (cap + "%") : "—";
+  el("battText").textContent = statCn || "未知";
+
+  var dv = dev ? String(dev).trim().split("|") : [];
+  var brand = (dv[0] || "").trim();
+  var model = (dv[1] || "").trim();
+  if(model && brand && model.toLowerCase().indexOf(brand.toLowerCase()) < 0) model = brand + " " + model;
+  el("deviceModel").textContent = model || "—";
+  var soc = (dv[2] || "").trim();
+  var cores = (dv[3] || "").trim();
+  el("deviceSoc").textContent = soc ? (soc + (cores && cores !== "0" ? " · " + cores + " 核" : "")) : "—";
+  var ring = el("battRing");
+  if(ring){
+    var rp = (capNum >= 0) ? Math.max(0, Math.min(100, capNum)) : 0;
+    ring.style.strokeDashoffset = String(289 * (1 - rp / 100));
+    ring.setAttribute("data-low", (capNum >= 0 && capNum <= 20) ? "1" : "0");
+  }
+
+  var tv = tp ? String(tp).trim() : "";
+  el("tempText").textContent = /^\d+$/.test(tv) ? (parseInt(tv,10)/10).toFixed(1) + " ℃" : "—";
+
+  var fv = fq ? String(fq).trim() : "";
+  /* CPU 动态显示：state 里的 policyN target = 本轮实际写入的省电上限。 */
+  var cpuTarget = {};
+  if(st){
+    String(st).split("\n").forEach(function(l){
+      var m = /^(policy\d+)\s+(\d+)$/.exec(l.trim());
+      if(m) cpuTarget[m[1]] = m[2];
+    });
+  }
+  if(fv){
+    var fl = fv.split("\n").slice(0,4).map(function(l){
+      var p = l.trim().split(/\s+/);
+      if(p.length !== 2) return l;
+      var seg = p[1].split("/");
+      if(seg.length !== 3) return p[0] + " " + p[1];
+      var cur = seg[0], cap = seg[1], hw = seg[2];
+      var t = p[0] + "  " + fmtKHz(cur) + " / " + fmtKHz(cap);
+      var tg = cpuTarget[p[0]];
+      if(tg && /^\d+$/.test(cap) && tg !== cap) t += "  → " + fmtKHz(tg);
+      if(/^\d+$/.test(cap) && /^\d+$/.test(hw) && parseInt(cap,10) < parseInt(hw,10))
+        t += "  · HW " + fmtKHz(hw);
+      return t;
+    });
+    el("freqText").textContent = fl.join("\n");
+  }else{
+    el("freqText").textContent = "—";
+  }
+
+  /* GPU 动态显示：state 里 gpu:<设备名> 行 = 本轮实际写入的上限。 */
+  var gpuTarget = {};
+  if(st){
+    String(st).split("\n").forEach(function(l){
+      var m = /^gpu:(\S+)\s+(\d+)$/.exec(l.trim());
+      if(m) gpuTarget[m[1]] = m[2];
+    });
+  }
+  var gv = gq ? String(gq).trim() : "";
+  if(gv){
+    var devRe = /(gpu|kgsl|mali|g3d|gpufreq|sgx|pvr|adreno)/i;
+    var notGpu = /(bus|bwmon|bw$|ddr|llcc|memlat|mem|noc|l3|dsu|npu|cdsp|adsp|modem|mdss)/i;
+    var gl = gv.split("\n").slice(0,8).map(function(l){
+      var p = l.trim().split(/\s+/);
+      if(p.length < 2) return l;
+      var hit = devRe.test(p[0]) && !notGpu.test(p[0]);
+      var seg = p[1].split("/");
+      var cur = seg[0] || "", max = seg[1] || "";
+      var t = (hit ? "✓ " : "· ") + p[0];
+      t += "\n    " + fmtHz(cur) + " / " + fmtHz(max);
+      var tg = gpuTarget[p[0]];
+      if(tg){
+        t += "  · 上限 " + fmtHz(tg);
+      }else if(hit && seg[1] && /^\d+$/.test(seg[1])){
+        t += "  · 未限频";
+      }
+      return t;
+    });
+    el("gpuText").textContent = gl.join("\n");
+  }else{
+    el("gpuText").textContent = "—（无标准 devfreq 设备）";
+  }
+
+  function screenState(fb, drm){
+    var f = fb || "", d = drm || "";
+    if(/^\d+$/.test(f)) return f === "0" ? "亮屏" : "息屏";
+    if(d === "enabled" || d === "on") return "亮屏";
+    if(d === "disabled" || d === "off") return "息屏";
+    return "未知";
+  }
+  el("screenText").textContent = screenState(scrFb ? String(scrFb).trim() : "", scrDrm ? String(scrDrm).trim() : "");
+
+  if(conf) parseConfig(conf);
+  renderCfg();
+
+  var logEl = el("log");
+  var stick = (logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight) < 24;
+  var prevTop = logEl.scrollTop;
+  logEl.textContent = (lg && lg.length) ? lg : "（暂无日志）";
+  if(stick) logEl.scrollTop = logEl.scrollHeight;
+  else logEl.scrollTop = prevTop;
+}
+
+/* ---- 运行日志导出：写到系统 Download，便于直接用文件管理器取走 ---- */
+function logPad2(n){ return (n < 10 ? "0" : "") + n; }
+function logStamp(){
+  var d = new Date();
+  return "" + d.getFullYear() + logPad2(d.getMonth() + 1) + logPad2(d.getDate()) +
+         "-" + logPad2(d.getHours()) + logPad2(d.getMinutes()) + logPad2(d.getSeconds());
+}
+function logHumanTime(){
+  var d = new Date();
+  return "" + d.getFullYear() + "-" + logPad2(d.getMonth() + 1) + "-" + logPad2(d.getDate()) +
+         " " + logPad2(d.getHours()) + ":" + logPad2(d.getMinutes()) + ":" + logPad2(d.getSeconds());
+}
+function buildExportLogCmd(name, human){
+  var dir = "/sdcard/Download";
+  return "DIR=" + dir + "; [ -d \"$DIR\" ] || DIR=/storage/emulated/0/Download; [ -d \"$DIR\" ] || DIR=/data/local/tmp; " +
+         "OUT=\"$DIR/" + name + "\"; { echo '# 续航天平 PowerBalance 运行日志'; " +
+         "echo '# 导出时间: " + human + "'; " +
+         "echo '# 版本: '$(sed -n 's/^version=//p' /data/adb/modules/power-balance/module.prop 2>/dev/null | head -n1); " +
+         "echo '# 设备: '$(getprop ro.product.brand 2>/dev/null)' '$(getprop ro.product.model 2>/dev/null); " +
+         "echo '# Android: '$(getprop ro.build.version.release 2>/dev/null); " +
+         "echo '# 日志文件: " + LOG + "'; echo '# ----'; " +
+         "if [ -f \"" + LOG + "\" ]; then cat \"" + LOG + "\"; else echo '(service.log 不存在)'; fi; " +
+         "} > \"$OUT\" 2>/dev/null; chmod 0644 \"$OUT\" 2>/dev/null; echo \"$OUT\"";
+}
+async function exportRunLog(){
+  var b = el("exportLog");
+  var name = "PowerBalance-log-" + logStamp() + ".txt";
+  if(b) b.disabled = true;
+  try{
+    if(!bridge){
+      var txt = "# 续航天平 PowerBalance 运行日志\n# 导出时间: " + logHumanTime() + "\n# ----\n" + (el("log") ? el("log").textContent : "") + "\n";
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([txt], {type:"text/plain;charset=utf-8"}));
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); a.parentNode && a.parentNode.removeChild(a); }, 500);
+      toast("已导出当前显示日志");
+      return;
+    }
+    var r = await runSh(buildExportLogCmd(name, logHumanTime()));
+    var out = "";
+    if(r && typeof r.stdout === "string") out = r.stdout.trim().split("\n").pop() || "";
+    if(!r || (typeof r.errno === "number" && r.errno !== 0)){
+      toast("导出失败：无法写入 Download，请检查存储权限", true);
+      return;
+    }
+    if(out && out.charAt(0) === "/"){
+      toast("已导出：" + out.replace(/^.*\/Download\//, "Download/"));
+    }else{
+      toast("已导出：Download/" + name);
+    }
+  }catch(e){
+    toast("导出失败：" + (e && e.message ? e.message : "无法生成日志文件"), true);
+  }finally{
+    if(b) b.disabled = false;
+  }
+}
+if(el("exportLog")) el("exportLog").addEventListener("click", exportRunLog);
+
+el("enabled").addEventListener("change", function(){ writeCfg("enabled", this.checked ? 1 : 0); });
+el("core_off").addEventListener("change", function(){ writeCfg("core_off", this.checked ? 1 : 0); });
+el("screen_off_save").addEventListener("change", function(){ writeCfg("screen_off_save", this.checked ? 1 : 0); });
+el("gov_switch").addEventListener("change", function(){ writeCfg("gov_switch", this.checked ? 1 : 0); });
+el("thermal_boost").addEventListener("change", function(){ writeCfg("thermal_boost", this.checked ? 1 : 0); });
+el("batt_boost").addEventListener("change", function(){ writeCfg("batt_boost", this.checked ? 1 : 0); });
+el("gpu_save").addEventListener("change", function(){ writeCfg("gpu_save", this.checked ? 1 : 0); });
+el("gpu_devices").addEventListener("change", function(){ writeCfg("gpu_devices", this.value); });
+el("exclude").addEventListener("change", function(){ writeCfg("exclude", this.value); });
+el("threshold").addEventListener("change", function(){ writeCfg("threshold", this.value); });
+el("poll").addEventListener("change", function(){ writeCfg("poll", this.value); });
+el("threshold").addEventListener("input", function(){ paintRange("threshold", "thresholdVal", "%"); });
+el("poll").addEventListener("input", function(){ paintRange("poll", "pollVal", "s"); });
+["mode","level"].forEach(function(k){
+  el(k).addEventListener("click", function(e){
+    var b = e.target;
+    while(b && b !== this && b.getAttribute && !b.getAttribute("data-v")) b = b.parentNode;
+    if(b && b.getAttribute && b.getAttribute("data-v")) writeCfg(k, b.getAttribute("data-v"));
+  });
+});
+el("refreshAll").addEventListener("click", refresh);
+
+/* ---- 应用选择器：从已装第三方应用里选包名加入排除名单 ---- */
+var appPkgs = [];
+function renderAppList(){
+  var box = el("appList");
+  while(box.firstChild) box.removeChild(box.firstChild);
+  if(!bridge){
+    var ro = document.createElement("div");
+    ro.className = "app-empty";
+    ro.textContent = "只读模式：无命令接口，无法列出应用";
+    box.appendChild(ro);
+    return;
+  }
+  var q = (el("appSearch").value || "").trim().toLowerCase();
+  var shown = 0;
+  for(var i=0;i<appPkgs.length && shown<300;i++){
+    if(q && appPkgs[i].indexOf(q) < 0) continue;
+    shown++;
+    var item = document.createElement("div");
+    item.setAttribute("data-p", appPkgs[i]);
+    item.className = "app-item";
+    item.textContent = appPkgs[i];
+    box.appendChild(item);
+  }
+  if(!shown){
+    var empty = document.createElement("div");
+    empty.className = "app-empty";
+    empty.textContent = "无匹配应用";
+    box.appendChild(empty);
+  }
+}
+el("appList").addEventListener("click", function(e){
+  var t = e.target;
+  if(!t || !t.getAttribute) return;
+  var p = t.getAttribute("data-p");
+  if(!p) return;
+  var cur = cleanVal("exclude", el("exclude").value);
+  var parts = cur ? cur.split(" ") : [];
+  if(parts.indexOf(p) < 0) parts.push(p);
+  var merged = cleanVal("exclude", parts.join(" "));
+  el("exclude").value = merged;
+  writeCfg("exclude", merged);
+  el("appPicker").style.display = "none";
+});
+el("appSearch").addEventListener("input", renderAppList);
+el("pickApp").addEventListener("click", async function(){
+  var picker = el("appPicker");
+  if(picker.style.display === "block"){ picker.style.display = "none"; return; }
+  if(!appPkgs.length && bridge){
+    var r = await runSh("pm list packages -3 2>/dev/null");
+    if(r && r.stdout){
+      appPkgs = String(r.stdout).split("\n")
+        .map(function(l){ return l.replace(/^package:/,"").trim(); })
+        .filter(function(p){ return /^[A-Za-z0-9_.]+$/.test(p); })
+        .sort();
+    }
+  }
+  picker.style.display = "block";
+  renderAppList();
+});
+
+var refreshing = false;
+async function refresh(){
+  if(refreshing) return;
+  refreshing = true;
+  try{ await doRefresh(); } finally { refreshing = false; }
+}
+
+renderCfg();
+refresh();
+setInterval(refresh, 30000);
+</script>
+</body>
+</html>
