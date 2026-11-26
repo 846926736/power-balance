@@ -413,7 +413,7 @@
         <div class="brand-author">作者：<b>酷安@一颗初心</b></div>
       </div>
     </div>
-    <div class="ver-pill"><i></i><span id="verBadge">v2.7.4</span></div>
+    <div class="ver-pill"><i></i><span id="verBadge">v2.7.5</span></div>
   </header>
 
   <div id="roBanner" class="ro">未检测到管理器的命令接口，当前为只读预览。请在 Magisk / KernelSU 的 WebUI 中打开本页才能修改配置。</div>
@@ -895,8 +895,16 @@ async function writeCfg(key, value){
   var v = cleanVal(key, value);
   if(v === null) return;
   /* v 已经过 cleanVal 白名单净化（枚举 / 数字 / 包名 / 设备名），可安全内插。
-     末尾用 grep 校验写入结果，errno 才能真实反映成败。 */
-  var cmd = "f=" + CONF + "; if grep -q '^" + key + "=' $f; then sed -i 's@" + key + "=.*@" + key + "=" + v + "@' $f; else echo '" + key + "=" + v + "' >> $f; fi; grep -q '^" + key + "=" + v + "$' $f";
+     先写 tmp 再 mv，避免服务和 WebUI 同时读到一个写了一半的 config；
+     最后校验最终文件里的键值，errno 才能真实反映成败。 */
+  var cmd = "f=" + CONF + "; t=\"$f.tmp\"; " +
+            "if [ -f \"$f\" ]; then cp -f \"$f\" \"$t\" 2>/dev/null || : > \"$t\"; else : > \"$t\"; fi; " +
+            "if grep -q '^" + key + "=' \"$t\" 2>/dev/null; then " +
+            "sed -i 's@^" + key + "=.*@" + key + "=" + v + "@' \"$t\"; " +
+            "else echo '" + key + "=" + v + "' >> \"$t\"; fi; " +
+            "if mv -f \"$t\" \"$f\" 2>/dev/null; then " +
+            "grep -q '^" + key + "=" + v + "$' \"$f\"; " +
+            "else rm -f \"$t\"; false; fi";
   setBusy(true);
   try{
     var r = await runSh(cmd);
@@ -1065,6 +1073,7 @@ function buildStatusScript(){
     'echo "@DRM@"; cat /sys/class/drm/card0-DSI-1/enabled 2>/dev/null',
     'echo "@DEV@"; db=$(getprop ro.product.brand 2>/dev/null); [ -n "$db" ] || db=$(getprop ro.product.manufacturer 2>/dev/null); dm=$(getprop ro.product.marketname 2>/dev/null); [ -n "$dm" ] || dm=$(getprop ro.vendor.oplus.market.name 2>/dev/null); [ -n "$dm" ] || dm=$(getprop ro.product.model 2>/dev/null); ds=$(getprop ro.soc.model 2>/dev/null); [ -n "$ds" ] || ds=$(getprop ro.board.platform 2>/dev/null); [ -n "$ds" ] || ds=$(getprop ro.hardware 2>/dev/null); [ -n "$ds" ] || ds=$(grep "Hardware" /proc/cpuinfo 2>/dev/null | head -n1 | sed "s/.*: //"); dc=$(ls -d /sys/devices/system/cpu/cpu[0-9]* 2>/dev/null | wc -l | tr -d " "); echo "$db|$dm|$ds|$dc"',
     "echo \"@VER@\"; grep '^version=' " + M + "/module.prop 2>/dev/null",
+    'echo "@ALIVE@"; sp=$(sed -n "1p" ' + M + '/state 2>/dev/null); if [ -n "$sp" ] && [ -d "/proc/$sp" ]; then echo 1; else echo 0; fi',
     'echo "@UPT@"; cat /proc/uptime 2>/dev/null',
     'echo "@LOG@"; tail -n 60 ' + M + '/service.log 2>/dev/null'
   ].join("; ");
@@ -1106,6 +1115,7 @@ async function doRefresh(){
   var scrDrm = ("DRM" in S) ? S.DRM : null;
   var dev = ("DEV" in S) ? S.DEV : null;
   var ver = ("VER" in S) ? S.VER : null;
+  var alive = ("ALIVE" in S) ? String(S.ALIVE).trim() : "";
   var lg = ("LOG" in S) ? S.LOG : null;
   var vv = ver ? ver.replace(/^version=/,"").trim() : "";
   if(vv) el("verBadge").textContent = vv;
@@ -1165,9 +1175,16 @@ async function doRefresh(){
       }
     }
     var names = {light:"轻度", balanced:"均衡", extreme:"激进"};
-    el("stateText").textContent = lvl ? ("省电中 · " + (names[lvl] || lvl) + tags) : "未激活 · 系统原样";
-    el("stateText").className = "hero-state" + (lvl ? "" : " stateOff");
-    el("stateDot").setAttribute("data-active", lvl ? "1" : "0");
+    if(lvl && alive === "0"){
+      /* state 还在但 pid 已死：显示“省电中”会误导用户，单独标出残留。 */
+      el("stateText").textContent = "状态残留 · 服务未运行";
+      el("stateText").className = "hero-state err";
+      el("stateDot").setAttribute("data-active", "0");
+    }else{
+      el("stateText").textContent = lvl ? ("省电中 · " + (names[lvl] || lvl) + tags) : "未激活 · 系统原样";
+      el("stateText").className = "hero-state" + (lvl ? "" : " stateOff");
+      el("stateDot").setAttribute("data-active", lvl ? "1" : "0");
+    }
     rememberHero();
   }
 
@@ -1290,16 +1307,24 @@ function logHumanTime(){
          " " + logPad2(d.getHours()) + ":" + logPad2(d.getMinutes()) + ":" + logPad2(d.getSeconds());
 }
 function buildExportLogCmd(name, human){
-  var dir = "/sdcard/Download";
-  return "DIR=" + dir + "; [ -d \"$DIR\" ] || DIR=/storage/emulated/0/Download; [ -d \"$DIR\" ] || DIR=/data/local/tmp; " +
-         "OUT=\"$DIR/" + name + "\"; { echo '# 续航天平 PowerBalance 运行日志'; " +
+  var body = "{ echo '# 续航天平 PowerBalance 运行日志'; " +
          "echo '# 导出时间: " + human + "'; " +
          "echo '# 版本: '$(sed -n 's/^version=//p' /data/adb/modules/power-balance/module.prop 2>/dev/null | head -n1); " +
          "echo '# 设备: '$(getprop ro.product.brand 2>/dev/null)' '$(getprop ro.product.model 2>/dev/null); " +
          "echo '# Android: '$(getprop ro.build.version.release 2>/dev/null); " +
          "echo '# 日志文件: " + LOG + "'; echo '# ----'; " +
          "if [ -f \"" + LOG + "\" ]; then cat \"" + LOG + "\"; else echo '(service.log 不存在)'; fi; " +
-         "} > \"$OUT\" 2>/dev/null; chmod 0644 \"$OUT\" 2>/dev/null; echo \"$OUT\"";
+         "}";
+  /* 按 Download -> 旧版 Download -> /data/local/tmp 顺序落盘；
+     只有文件真实存在且非空才返回 OK，避免“echo 成功但没写进去”。 */
+  return "NAME=" + name + "; OUT=''; " +
+         "for DIR in /sdcard/Download /storage/emulated/0/Download /data/local/tmp; do " +
+         "[ -d \"$DIR\" ] || continue; T=\"$DIR/$NAME.part.$$\"; rm -f \"$T\" 2>/dev/null; " +
+         body + " > \"$T\" 2>/dev/null; " +
+         "if [ -s \"$T\" ]; then F=\"$DIR/$NAME\"; " +
+         "if mv -f \"$T\" \"$F\" 2>/dev/null; then OUT=\"$F\"; break; fi; fi; " +
+         "rm -f \"$T\" 2>/dev/null; done; " +
+         "if [ -n \"$OUT\" ]; then chmod 0644 \"$OUT\" 2>/dev/null; echo \"OK:$OUT\"; else echo FAIL; fi";
 }
 async function exportRunLog(){
   var b = el("exportLog");
@@ -1320,14 +1345,15 @@ async function exportRunLog(){
     var r = await runSh(buildExportLogCmd(name, logHumanTime()));
     var out = "";
     if(r && typeof r.stdout === "string") out = r.stdout.trim().split("\n").pop() || "";
-    if(!r || (typeof r.errno === "number" && r.errno !== 0)){
-      toast("导出失败：无法写入 Download，请检查存储权限", true);
+    if(!r || (typeof r.errno === "number" && r.errno !== 0) || !/^OK:\//.test(out)){
+      toast("导出失败：Download 与 /data/local/tmp 均不可写", true);
       return;
     }
-    if(out && out.charAt(0) === "/"){
+    out = out.slice(3);
+    if(out.indexOf("/Download/") >= 0){
       toast("已导出：" + out.replace(/^.*\/Download\//, "Download/"));
     }else{
-      toast("已导出：Download/" + name);
+      toast("已导出：" + out);
     }
   }catch(e){
     toast("导出失败：" + (e && e.message ? e.message : "无法生成日志文件"), true);

@@ -103,7 +103,12 @@ owner_alive_saver() {
   opid=$1
   [ -n "$opid" ] || return 1
   [ -d "/proc/$opid" ] || return 1
-  grep -q 'power-balance/service.sh' "/proc/$opid/cmdline" 2>/dev/null
+  grep -q 'power-balance/service.sh' "/proc/$opid/cmdline" 2>/dev/null && return 0
+  opcmd=$(tr '\0' ' ' < "/proc/$opid/cmdline" 2>/dev/null)
+  case "$opcmd" in
+    *"$MODDIR/service.sh"*) return 0 ;;
+  esac
+  return 1
 }
 
 log "action: user toggled module"

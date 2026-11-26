@@ -442,6 +442,17 @@ pick_gpu_freq() {
     done
   fi
   if [ "$av_ok" != "1" ]; then
+    # 没有可用频率表时，extreme 的 0% 目标不能直接写成 0（部分 GPU
+    # devfreq 没有 available_frequencies，写 0 会把 min/max 一起压成
+    # 非法值）。此时退回当前 min_freq，读不到就不写，宁可不限频。
+    if [ "$pct" = "0" ]; then
+      gmin=$(node_get "${gd}min_freq")
+      case "$gmin" in
+        [0-9]*) echo "$gmin"; return 0 ;;
+      esac
+      echo ""
+      return 1
+    fi
     echo "approx:$want"
     return 0
   fi
@@ -691,7 +702,12 @@ owner_alive_saver() {
   opid=$1
   [ -n "$opid" ] || return 1
   [ -d "/proc/$opid" ] || return 1
-  grep -q 'power-balance/service.sh' "/proc/$opid/cmdline" 2>/dev/null
+  grep -q 'power-balance/service.sh' "/proc/$opid/cmdline" 2>/dev/null && return 0
+  opcmd=$(tr '\0' ' ' < "/proc/$opid/cmdline" 2>/dev/null)
+  case "$opcmd" in
+    *"$MODDIR/service.sh"*) return 0 ;;
+  esac
+  return 1
 }
 
 # ============ 主调度 ============
@@ -863,6 +879,13 @@ apply_level() {
     hwmin=$(node_get "$pd/cpuinfo_min_freq")
     cur_min=$(node_get "$pd/scaling_min_freq")
 
+    # 先备份原始 max，再动 min / 调度器。否则 max 备份失败时，min 已经被
+    # 压低、却没有 max 备份和 state 记录，会留下半套改动。
+    if ! backup_node "$pd/scaling_max_freq"; then
+      log "skip $pol (scaling_max_freq backup failed)"
+      continue
+    fi
+
     # extreme：先把 min 降到硬件最低，再压 max（避免 max 低于 min 被夹）
     if [ "$lvl" = "extreme" ]; then
       case "$hwmin" in
@@ -911,12 +934,10 @@ apply_level() {
       fi
     fi
 
-    # 记录本集群目标（仅当写入成功，供漂移检测比对）
-    if backup_node "$pd/scaling_max_freq"; then
-      if write_node "$pd/scaling_max_freq" "$target"; then
-        PAIRS="$PAIRS$pol $target
+    # 记录本集群目标（max 已在上方备份，仅当写入成功供漂移检测比对）
+    if write_node "$pd/scaling_max_freq" "$target"; then
+      PAIRS="$PAIRS$pol $target
 "
-      fi
     fi
 
     # walt hispeed：balanced/extreme 且该 policy 仍在用 walt 时同步压低
@@ -955,24 +976,6 @@ apply_level() {
         balanced) gpct=70 ;;
         *) gpct=0 ;;
       esac
-      # extreme：先把 min 下探到最低可用档（避免 max 低于 min 被夹）
-      if [ "$lvl" = "extreme" ]; then
-        glow=$(pick_gpu_freq "$gdir" 0)
-        gmin_cur=$(node_get "${gdir}min_freq")
-        case "$glow" in
-          [0-9]*)
-            case "$gmin_cur" in
-              [0-9]*)
-                if [ "$gmin_cur" -gt "$glow" ] 2>/dev/null; then
-                  if backup_node "${gdir}min_freq"; then
-                    write_node "${gdir}min_freq" "$glow"
-                  fi
-                fi
-                ;;
-            esac
-            ;;
-        esac
-      fi
       gtarget=$(pick_gpu_freq "$gdir" "$gpct")
       if [ -z "$gtarget" ]; then
         log "gpu $gname: no usable freq info; skip"
@@ -984,18 +987,41 @@ apply_level() {
           log "gpu $gname freq list missing, using approx target"
           ;;
       esac
+      # 先备份 max_freq；失败时绝不先动 min_freq，避免留下
+      # “min 已下探、max 没备份”的半套改动。
+      if ! backup_node "${gdir}max_freq"; then
+        log "gpu $gname: max_freq backup failed, skip"
+        continue
+      fi
+      # extreme：max 备份完成后，再把 min 下探到最低可用档
+      # （避免 max 低于 min 被夹）。
+      if [ "$lvl" = "extreme" ]; then
+        glow=$(pick_gpu_freq "$gdir" 0)
+        gmin_cur=$(node_get "${gdir}min_freq")
+        case "$glow" in
+          [0-9]*)
+            case "$gmin_cur" in
+              [0-9]*)
+                if [ "$gmin_cur" -gt "$glow" ] 2>/dev/null; then
+                  if backup_node "${gdir}min_freq"; then
+                    write_node "${gdir}min_freq" "$glow" || log "gpu $gname: min_freq write failed"
+                  else
+                    log "gpu $gname: min_freq backup failed, max will stay above current min"
+                  fi
+                fi
+                ;;
+            esac
+            ;;
+        esac
+      fi
       gmin_now=$(node_get "${gdir}min_freq")
       case "$gmin_now" in
         [0-9]*) [ "$gtarget" -lt "$gmin_now" ] 2>/dev/null && gtarget=$gmin_now ;;
       esac
-      if backup_node "${gdir}max_freq"; then
-        GPU_TODO="$GPU_TODO$gdir $gtarget
+      GPU_TODO="$GPU_TODO$gdir $gtarget
 "
-        GPU_BACKED="$GPU_BACKED$gdir
+      GPU_BACKED="$GPU_BACKED$gdir
 "
-      else
-        log "gpu $gname: backup failed, skip"
-      fi
     done
     # 逐个写入；失败则回滚（含 extreme 先写过的 min_freq）
     GPU_FAIL=0

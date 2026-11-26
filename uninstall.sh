@@ -99,7 +99,58 @@ restore_all() {
   return 0
 }
 
+owner_alive_saver() {
+  opid=$1
+  [ -n "$opid" ] || return 1
+  [ -d "/proc/$opid" ] || return 1
+  grep -q 'power-balance/service.sh' "/proc/$opid/cmdline" 2>/dev/null && return 0
+  opcmd=$(tr '\0' ' ' < "/proc/$opid/cmdline" 2>/dev/null)
+  case "$opcmd" in
+    *"$MODDIR/service.sh"*) return 0 ;;
+  esac
+  return 1
+}
+
+# 卸载前先停掉仍在轮询的服务。否则 uninstall 还原完成后，服务的下一轮
+# 可能再次压频，形成“卸载了但频率仍被改”的假象。
+stop_saver() {
+  pids=""
+  for pf in "$LOCK/pid" "$STATE"; do
+    [ -r "$pf" ] || continue
+    p=$(sed -n '1p' "$pf" 2>/dev/null | tr -d ' \t\r')
+    case "$p" in
+      ''|*[!0-9]*) continue ;;
+    esac
+    owner_alive_saver "$p" || continue
+    case " $pids " in
+      *" $p "*) ;;
+      *) pids="$pids $p" ;;
+    esac
+  done
+  [ -n "$pids" ] || return 0
+  log "uninstall: stopping service pid(s):$pids"
+  kill $pids 2>/dev/null
+  i=0
+  while [ "$i" -lt 5 ]; do
+    alive=0
+    for p in $pids; do
+      [ -d "/proc/$p" ] && alive=1
+    done
+    [ "$alive" = "0" ] && break
+    sleep 1
+    i=$((i + 1))
+  done
+  for p in $pids; do
+    [ -d "/proc/$p" ] || continue
+    owner_alive_saver "$p" || continue
+    kill -9 "$p" 2>/dev/null
+  done
+  sleep 1
+  return 0
+}
+
 log "uninstall: restoring all backed-up nodes"
+stop_saver
 restore_all
 RR=$?
 if [ "$RR" = "0" ]; then

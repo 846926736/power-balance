@@ -2,7 +2,7 @@
 
 一个面向 Android 的 Magisk 模块：电量低或息屏时自动给 CPU / GPU 降频省电，条件结束后按原值还原。
 
-**当前版本：v2.7.4 / versionCode 16**
+**当前版本：v2.7.5 / versionCode 17**
 
 ## 功能
 
@@ -11,14 +11,15 @@
 - GPU 支持 kgsl / Mali / g3d / gpufreq 等主流平台，自动识别。
 - 温度保护优先，高温时优先降频。
 - 改动前备份原值，退出、卸载或关闭模块时还原。
-- WebUI：设备信息、14 节状态、运行日志、日志导出。
+- WebUI：设备信息、15 节状态、运行日志、日志导出。
 - WebUI：GitHub 更新按钮，直达最新 Release。
+- WebUI：service 存活探测，state 残留时提示“服务未运行”。
 - WebUI：作者主页入口、打赏码点按。
 
 ## 安装
 
 1. 设备已安装 Magisk 20.4+。
-2. 下载 Release 中的 `power-balance-magisk-v2.7.4.zip`。
+2. 下载 Release 中的 `power-balance-magisk-v2.7.5.zip`。
 3. 在 Magisk「模块 → 从本地安装」选择 zip，刷入后重启。
 4. 打开模块 WebUI 调整阈值、轮询间隔和降频策略。
 
@@ -30,8 +31,8 @@
 
 ## 验证
 
-- v2.7.4 模块回归：27/27 通过。
-- WebUI 回归：125/125 通过。
+- v2.7.5 模块回归：30/30 通过。
+- WebUI 回归：133/133 通过。
 - DOM ID：50 个，唯一。
 - 安装包已附带在 Release 中。
 
