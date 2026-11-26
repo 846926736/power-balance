@@ -1,8 +1,6 @@
 name: Publish PowerBalance release
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -21,6 +19,14 @@ jobs:
           SOURCE_URL: https://aka.doubaocdn.com/s/tlnDZbUToW
         run: |
           set -e
+          # 只在仓库尚未导入 v2.7.4 时执行，避免以后 push 覆盖新代码。
+          if [ -f module.prop ]; then
+            code=$(sed -n 's/^versionCode=//p' module.prop | head -n 1)
+            case "$code" in
+              ''|*[!0-9]*) ;;
+              *) [ "$code" -ge 16 ] && { echo "Source v2.7.4+ already imported; skip"; exit 0; } ;;
+            esac
+          fi
           curl -L --fail --retry 3 --retry-delay 2 -o /tmp/power-balance-src.tar.gz "$SOURCE_URL"
           tar -xzf /tmp/power-balance-src.tar.gz -C .
           rm -f /tmp/power-balance-src.tar.gz
