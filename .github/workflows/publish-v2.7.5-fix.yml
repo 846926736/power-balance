@@ -1,0 +1,66 @@
+name: publish-v2.7.5
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download and verify assets
+        run: |
+          set -euo pipefail
+          curl -L --fail --silent --show-error -o /tmp/power-balance-magisk-v2.7.5.zip "https://aka.doubaocdn.com/s/qLdgIWuJKz"
+          curl -L --fail --silent --show-error -o /tmp/power-balance-src-v2.7.5.tar.gz "https://aka.doubaocdn.com/s/0SbKke2fUu"
+          echo "859af75c2d2a056962f12ed2288e19e864dc3a5399d7c78b3370693197e26a0f  /tmp/power-balance-magisk-v2.7.5.zip" | sha256sum -c -
+          echo "607a39d6f26aeb03017ac4ab854ef01c792e9b98361fcc860a5ceb272ad25ad3  /tmp/power-balance-src-v2.7.5.tar.gz" | sha256sum -c -
+
+      - name: Import v2.7.5 source
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/pb-src
+          mkdir -p /tmp/pb-src
+          tar -xzf /tmp/power-balance-src-v2.7.5.tar.gz -C /tmp/pb-src
+          cp -a /tmp/pb-src/. .
+          grep -q '^version=v2.7.5$' module.prop
+          grep -q '^versionCode=17$' module.prop
+          test -f README.md
+          test -f CHANGELOG.md
+          test -f TEST-REPORT.md
+
+      - name: Commit source and tag
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes"
+          else
+            git commit -m "Release v2.7.5"
+          fi
+          if git rev-parse v2.7.5 >/dev/null 2>&1; then
+            git tag -d v2.7.5
+          fi
+          git tag v2.7.5
+          git push origin main
+          git push origin v2.7.5
+
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v2.7.5 \
+            /tmp/power-balance-magisk-v2.7.5.zip \
+            /tmp/power-balance-src-v2.7.5.tar.gz \
+            --title "v2.7.5" \
+            --notes-file CHANGELOG.md \
+            --latest
