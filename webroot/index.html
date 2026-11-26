@@ -295,11 +295,6 @@
   }
   .donate-btn:active{background:rgba(231,197,131,.15);border-color:rgba(231,197,131,.55);}
   .donate-btn .heart{color:var(--gold);font-size:13px;line-height:1;}
-  .github-btn{
-    border-color:rgba(125,211,252,.34);background:rgba(125,211,252,.075);color:#dff4ff;
-  }
-  .github-btn:active{transform:scale(.97);background:rgba(125,211,252,.14);border-color:rgba(125,211,252,.55);}
-  .github-btn .arrow{color:#7dd3fc;font-size:12px;line-height:1;}
 
   /* ---------- 打赏弹窗 ---------- */
   .modal{position:fixed;inset:0;z-index:120;display:none;align-items:center;justify-content:center;padding:18px;}
@@ -413,7 +408,7 @@
         <div class="brand-author">作者：<b>酷安@一颗初心</b></div>
       </div>
     </div>
-    <div class="ver-pill"><i></i><span id="verBadge">v2.7.4</span></div>
+    <div class="ver-pill"><i></i><span id="verBadge">v2.7.3</span></div>
   </header>
 
   <div id="roBanner" class="ro">未检测到管理器的命令接口，当前为只读预览。请在 Magisk / KernelSU 的 WebUI 中打开本页才能修改配置。</div>
@@ -680,7 +675,6 @@
   <footer>
     <div>续航天平 PowerBalance · 作者：酷安@一颗初心</div>
     <div class="foot-actions">
-      <a class="author-btn github-btn" id="githubLink" href="https://github.com/846926736/power-balance/releases/latest" target="_blank" rel="noopener" aria-label="打开 GitHub 更新页面">GitHub 更新<span class="arrow">↗</span></a>
       <a class="author-btn" id="authorLink" href="https://www.coolapk.com/u/1361950" target="_blank" rel="noopener">访问作者主页<span class="arrow">↗</span></a>
       <button class="author-btn donate-btn" id="donateBtn" type="button">打赏作者<span class="heart">♥</span></button>
     </div>
@@ -943,23 +937,6 @@ function openAuthor(e){
   else { location.href = AUTHOR_URL; }
 }
 el("authorLink").addEventListener("click", openAuthor);
-
-/* ---- GitHub 更新：直接打开最新 Release 页面 ---- */
-var GITHUB_URL = "https://github.com/846926736/power-balance/releases/latest";
-function githubCmd(){
-  return "am start -a android.intent.action.VIEW -c android.intent.category.BROWSABLE -d '" + GITHUB_URL + "' -f 0x10000000 >/dev/null 2>&1";
-}
-function openGithub(e){
-  if(e && e.preventDefault) e.preventDefault();
-  if(bridge){
-    runSh(githubCmd());
-    toast("正在打开 GitHub 更新");
-    return;
-  }
-  if(window.open){ window.open(GITHUB_URL, "_blank"); }
-  else { location.href = GITHUB_URL; }
-}
-el("githubLink").addEventListener("click", openGithub);
 
 /* ---- 打赏弹窗 ---- */
 var donateModal = el("donateModal");
