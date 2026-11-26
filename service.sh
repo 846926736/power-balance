@@ -1175,7 +1175,8 @@ decide_and_apply() {
   # 若当前已处于省电状态则立即还原，保证满性能（游戏/重负载应用友好）。
   # 例外：高温保护（thermal_boost）优先于排除名单——护电池是硬约束，
   # 游戏白名单不能在 45C+ 时把降频也一起挡掉。
-  if [ "$should" = "1" ]; then
+  # 排除名单为空时，不调用 dumpsys activity：省掉每轮一次 binder 查询。
+  if [ "$should" = "1" ] && [ -n "$CFG_EXCLUDE" ]; then
     fg=$(get_foreground_package)
     if [ -n "$fg" ] && is_excluded "$fg"; then
       if [ "$THERMAL_ON" = "1" ]; then

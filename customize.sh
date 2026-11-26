@@ -7,8 +7,8 @@ ui_print() { echo "$1"; }
 # 版本号直接从 module.prop 读取，避免刷入页与模块本体版本不一致。
 APP_VER=$(sed -n 's/^version=//p' "$MODPATH/module.prop" 2>/dev/null | head -n 1)
 APP_CODE=$(sed -n 's/^versionCode=//p' "$MODPATH/module.prop" 2>/dev/null | head -n 1)
-[ -n "$APP_VER" ] || APP_VER="v2.7.2"
-[ -n "$APP_CODE" ] || APP_CODE="14"
+[ -n "$APP_VER" ] || APP_VER="v2.7.4"
+[ -n "$APP_CODE" ] || APP_CODE="16"
 
 # 作者主页：安装时给一次音量上键跳转机会；不支持的环境只打印地址。
 AUTHOR_URL=${PS_AUTHOR_URL:-https://www.coolapk.com/u/1361950}
@@ -36,16 +36,12 @@ fi
 ui_print "  CPU / GPU 双天平 · 续航自动优化"
 ui_print "  低电量或息屏时降频，结束按原值还原"
 ui_print " "
-ui_print "  本次更新 · 对比 v2.7.1"
+ui_print "  本次更新 · 对比 v2.7.3"
 ui_print " "
-ui_print "  优化"
-ui_print "  · 电池状态：Charging slowly / 充电中 等识别"
-ui_print "  · 卸载还原失败时保留备份与 state"
+ui_print "  新增"
+ui_print "  · WebUI GitHub 更新按钮，直达最新 Release"
 ui_print " "
-ui_print "  修复"
-ui_print "  · WebUI：日志导出异常会明确提示"
-ui_print " "
-ui_print "  自检：模块 25 项 / UI 121 项通过"
+ui_print "  自检：模块 27 项 / UI 125 项通过"
 ui_print "  --------------------------------"
 ui_print "  作者主页：coolapk.com/u/1361950"
 
