@@ -1,0 +1,70 @@
+name: publish-v2.7.6
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download and verify assets
+        run: |
+          set -euo pipefail
+          curl -L --fail --silent --show-error -o /tmp/power-balance-magisk-v2.7.6.zip "https://aka.doubaocdn.com/s/MBDObHZTiK"
+          curl -L --fail --silent --show-error -o /tmp/power-balance-src-v2.7.6.tar.gz "https://aka.doubaocdn.com/s/xi1GOYUp7M"
+          echo "15ca994bde3557bc227702d098af33778535c581fba8edd692f9b0982e658e78  /tmp/power-balance-magisk-v2.7.6.zip" | sha256sum -c -
+          echo "bb94807c19fff0fffd0cbd8e3df5e5cafb41a22d9c5583e151b548abc9fbfbae  /tmp/power-balance-src-v2.7.6.tar.gz" | sha256sum -c -
+
+      - name: Import v2.7.6 source
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/pb-src
+          mkdir -p /tmp/pb-src
+          tar -xzf /tmp/power-balance-src-v2.7.6.tar.gz -C /tmp/pb-src
+          cp -a /tmp/pb-src/. .
+          grep -q '^version=v2.7.6$' module.prop
+          grep -q '^versionCode=18$' module.prop
+          test -f README.md
+          test -f CHANGELOG.md
+          test -f TEST-REPORT.md
+
+      - name: Commit source and tag
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No source changes"
+          else
+            git commit -m "Release v2.7.6"
+          fi
+          git tag v2.7.6
+          git push origin main
+          git push origin v2.7.6
+
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v2.7.6 \
+            /tmp/power-balance-magisk-v2.7.6.zip \
+            /tmp/power-balance-src-v2.7.6.tar.gz \
+            --title "v2.7.6" \
+            --notes-file CHANGELOG.md \
+            --latest
+
+      - name: Remove temporary publish workflow
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/publish-v2.7.6.yml
+          git commit -m "Remove temporary v2.7.6 publish workflow"
+          git push origin main
