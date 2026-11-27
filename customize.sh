@@ -7,8 +7,8 @@ ui_print() { echo "$1"; }
 # 版本号直接从 module.prop 读取，避免刷入页与模块本体版本不一致。
 APP_VER=$(sed -n 's/^version=//p' "$MODPATH/module.prop" 2>/dev/null | head -n 1)
 APP_CODE=$(sed -n 's/^versionCode=//p' "$MODPATH/module.prop" 2>/dev/null | head -n 1)
-[ -n "$APP_VER" ] || APP_VER="v2.7.5"
-[ -n "$APP_CODE" ] || APP_CODE="17"
+[ -n "$APP_VER" ] || APP_VER="v2.7.6"
+[ -n "$APP_CODE" ] || APP_CODE="18"
 
 # 作者主页：安装时给一次音量上键跳转机会；不支持的环境只打印地址。
 AUTHOR_URL=${PS_AUTHOR_URL:-https://www.coolapk.com/u/1361950}
@@ -36,19 +36,18 @@ fi
 ui_print "  CPU / GPU 双天平 · 续航自动优化"
 ui_print "  低电量或息屏时降频，结束按原值还原"
 ui_print " "
-ui_print "  本次优化 · 对比 v2.7.4"
+ui_print "  本次优化 · 对比 v2.7.5"
+ui_print " "
+ui_print "  新增"
+ui_print "  · 运行中改 gov_switch / core_off / gpu_devices，下一轮自动重套用"
 ui_print " "
 ui_print "  修复"
-ui_print "  · GPU 极端档无频率表时不再写入 0"
-ui_print "  · CPU/GPU 先备份 max 再动 min，避免半套改动"
-ui_print "  · 卸载前先停止服务，防止还原后被重新压频"
+ui_print "  · CPU 某集群写入失败时整套回滚，不再留下半套 min/调度器"
 ui_print " "
 ui_print "  优化"
-ui_print "  · 配置保存改为临时文件原子替换"
-ui_print "  · 日志导出校验真实落盘，失败逐目录回退"
-ui_print "  · WebUI 可识别服务退出后的残留状态"
+ui_print "  · 状态文件记录生效配置签名，换档/换设备后自动对齐"
 ui_print " "
-ui_print "  自检：模块 30 项 / UI 133 项通过"
+ui_print "  自检：模块 35 项 / UI 133 项通过"
 ui_print "  --------------------------------"
 ui_print "  作者主页：coolapk.com/u/1361950"
 

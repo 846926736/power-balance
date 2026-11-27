@@ -674,6 +674,13 @@ saver_level() {
   sed -n '2p' "$STATE" 2>/dev/null
 }
 
+# 配置签名：只包含“改变应用动作”的键。level 单独比对；
+# gov_switch / core_off / gpu_save / gpu_devices 变化时需要整体重套用，
+# 否则会出现 WebUI 关闭了开关、旧调度器或离线核却一直保留到省电结束。
+config_signature() {
+  printf '%s|%s|%s|%s|%s' "$CFG_LEVEL" "$CFG_GOV_SWITCH" "$CFG_CORE_OFF" "$CFG_GPU_SAVE" "$CFG_GPU_DEVICES"
+}
+
 # 状态文件：第 1 行 pid，第 2 行档位，第 3 行起每行 "policyN 目标频率"
 # （第 3 行起用于全量漂移检测）
 
@@ -684,6 +691,9 @@ set_state() { # $1=level $2=多行 "<key> target" 文本（末尾自带换行）
     printf 'GPUN %s\n' "${GPU_N:-0}"
     if [ -n "$APPLY_FLAGS" ]; then
       printf '%s\n' "$APPLY_FLAGS"
+    fi
+    if [ -n "$APPLY_SIG" ]; then
+      printf 'APPLY %s\n' "$APPLY_SIG"
     fi
   } > "$STATE.tmp" 2>/dev/null && mv -f "$STATE.tmp" "$STATE" 2>/dev/null
   return 0
@@ -837,6 +847,7 @@ apply_level() {
   TARGET0=''
   TARGET0_SET=''
   PAIRS=''
+  CPU_FAIL=0
   # 先收集各集群 hwmax，分出 小核/中核/大核
   hm_min='' ; hm_max=0
   for pol in $(policy_list); do
@@ -935,10 +946,13 @@ apply_level() {
     fi
 
     # 记录本集群目标（max 已在上方备份，仅当写入成功供漂移检测比对）
-    if write_node "$pd/scaling_max_freq" "$target"; then
-      PAIRS="$PAIRS$pol $target
-"
+    if ! write_node "$pd/scaling_max_freq" "$target"; then
+      log "cpu write failed: $pol (max=$target); rolling back CPU"
+      CPU_FAIL=1
+      break
     fi
+    PAIRS="$PAIRS$pol $target
+"
 
     # walt hispeed：balanced/extreme 且该 policy 仍在用 walt 时同步压低
     gnow=$(node_get "$pd/scaling_governor")
@@ -948,6 +962,15 @@ apply_level() {
       fi
     fi
   done
+
+  # CPU 是整套写入：任一集群 max 写失败，就把本轮所有 CPU 备份还原，
+  # 避免只改到一半的 min/调度器一直留到省电结束。
+  if [ "$CPU_FAIL" = "1" ]; then
+    log "cpu atomic rollback: 某集群写入失败，已回滚本轮 CPU 改动"
+    restore_all
+    return 1
+  fi
+  APPLY_SIG=$(config_signature)
 
   # GPU 纳入天平（gpu_save，默认开）：devfreq 标准接口限 GPU 最高频。
   # 轻度 90% / 均衡 70% / 激进压到最低档且把 min 下探。
@@ -1101,6 +1124,8 @@ decide_and_apply() {
   APPLY_FLAGS=''
   active=0
   saver_active && active=1
+  st_sig=$(sed -n 's/^APPLY //p' "$STATE" 2>/dev/null | head -n 1)
+  cur_sig=$(config_signature)
   eff_level=$CFG_LEVEL
 
   if [ "$CFG_ENABLED" != "1" ] || [ "$CFG_MODE" = "off" ]; then
@@ -1245,8 +1270,13 @@ decide_and_apply() {
     esac
     if [ "$active" = "0" ]; then
       apply_level "$eff_level"
-    elif [ "$(saver_level)" != "$eff_level" ] || [ "$gpu_mismatch" = "1" ]; then
-      log "config changed; re-applying from originals"
+    elif [ "$(saver_level)" != "$eff_level" ] || [ "$gpu_mismatch" = "1" ] \
+      || [ "$st_sig" != "$cur_sig" ]; then
+      if [ "$st_sig" != "$cur_sig" ]; then
+        log "apply config changed; re-applying from originals"
+      else
+        log "config changed; re-applying from originals"
+      fi
       restore_all
       apply_level "$eff_level"
     else

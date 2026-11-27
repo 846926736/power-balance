@@ -1,6 +1,6 @@
 id=power-balance
 name=续航天平 PowerBalance
-version=v2.7.5
-versionCode=17
+version=v2.7.6
+versionCode=18
 author=酷安：一颗初心
 description=电量低或息屏时自动给 CPU/GPU 降频省电，条件结束按原值逐项还原。GPU 自动识别 kgsl/Mali/g3d/gpufreq 等主流平台，机型无关。性能与续航的自动权衡。作者：酷安@一颗初心

@@ -2,7 +2,7 @@
 
 一个面向 Android 的 Magisk 模块：电量低或息屏时自动给 CPU / GPU 降频省电，条件结束后按原值还原。
 
-**当前版本：v2.7.5 / versionCode 17**
+**当前版本：v2.7.6 / versionCode 18**
 
 ## 功能
 
@@ -11,6 +11,7 @@
 - GPU 支持 kgsl / Mali / g3d / gpufreq 等主流平台，自动识别。
 - 温度保护优先，高温时优先降频。
 - 改动前备份原值，退出、卸载或关闭模块时还原。
+- 运行中修改 `gov_switch`、`core_off`、`gpu_devices` 后，下一轮自动重套用，不需要重启服务。
 - WebUI：设备信息、15 节状态、运行日志、日志导出。
 - WebUI：GitHub 更新按钮，直达最新 Release。
 - WebUI：service 存活探测，state 残留时提示“服务未运行”。
@@ -19,7 +20,7 @@
 ## 安装
 
 1. 设备已安装 Magisk 20.4+。
-2. 下载 Release 中的 `power-balance-magisk-v2.7.5.zip`。
+2. 下载 Release 中的 `power-balance-magisk-v2.7.6.zip`。
 3. 在 Magisk「模块 → 从本地安装」选择 zip，刷入后重启。
 4. 打开模块 WebUI 调整阈值、轮询间隔和降频策略。
 
@@ -31,13 +32,11 @@
 
 ## 验证
 
-- v2.7.5 模块回归：30/30 通过。
+- v2.7.6 模块回归：35/35 通过。
 - WebUI 回归：133/133 通过。
 - DOM ID：50 个，唯一。
 - 安装包已附带在 Release 中。
 
 ## 说明
 
-- 模块会修改 sysfs 调频节点；请确认设备与内核支持后再使用。
-- 作者：酷安 [@一颗初心](https://www.coolapk.com/u/1361950)。
-- WebUI 内含作者支付宝 / 微信打赏码，仅用于自愿支持。
+模块只写入 CPU 频率、调度器、部分大核在线状态和标准 devfreq GPU 频率节点；所有写入都经过白名单校验并可还原。不同 ROM 的节点命名可能有差异，识别不到时会跳过对应设备。
