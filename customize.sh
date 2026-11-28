@@ -7,8 +7,8 @@ ui_print() { echo "$1"; }
 # 版本号直接从 module.prop 读取，避免刷入页与模块本体版本不一致。
 APP_VER=$(sed -n 's/^version=//p' "$MODPATH/module.prop" 2>/dev/null | head -n 1)
 APP_CODE=$(sed -n 's/^versionCode=//p' "$MODPATH/module.prop" 2>/dev/null | head -n 1)
-[ -n "$APP_VER" ] || APP_VER="v2.7.6"
-[ -n "$APP_CODE" ] || APP_CODE="18"
+[ -n "$APP_VER" ] || APP_VER="v2.7.7"
+[ -n "$APP_CODE" ] || APP_CODE="19"
 
 # 作者主页：安装时给一次音量上键跳转机会；不支持的环境只打印地址。
 AUTHOR_URL=${PS_AUTHOR_URL:-https://www.coolapk.com/u/1361950}
@@ -36,18 +36,18 @@ fi
 ui_print "  CPU / GPU 双天平 · 续航自动优化"
 ui_print "  低电量或息屏时降频，结束按原值还原"
 ui_print " "
-ui_print "  本次优化 · 对比 v2.7.5"
-ui_print " "
-ui_print "  新增"
-ui_print "  · 运行中改 gov_switch / core_off / gpu_devices，下一轮自动重套用"
+ui_print "  本次优化 · 对比 v2.7.6"
 ui_print " "
 ui_print "  修复"
-ui_print "  · CPU 某集群写入失败时整套回滚，不再留下半套 min/调度器"
+ui_print "  · WALT hispeed_freq 只降不升，balanced 不再抬高原厂较低值"
 ui_print " "
 ui_print "  优化"
-ui_print "  · 状态文件记录生效配置签名，换档/换设备后自动对齐"
+ui_print "  · 增加 governor 漂移日志，便于定位 ROM 改回 walt/性能模式"
+ui_print "  · WebUI 增加夸克更新入口"
+ui_print "  · 打赏入口移到核心控制上方"
+ui_print "  · 打赏卡片视觉强化，更醒目"
 ui_print " "
-ui_print "  自检：模块 35 项 / UI 133 项通过"
+ui_print "  自检：模块 38 项 / UI 138 项通过"
 ui_print "  --------------------------------"
 ui_print "  作者主页：coolapk.com/u/1361950"
 

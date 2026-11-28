@@ -833,6 +833,27 @@ offline_top_cores() {
   return 0
 }
 
+# ---------- governor 期望值 ----------
+# 返回当前档位在该 policy 上应使用的 governor；空字符串表示不切换。
+# 独立成函数，apply_level 与漂移检测共用，避免两处判断不一致。
+expected_governor() {
+  eg_lvl=$1
+  eg_ag=$2
+  eg_out=''
+  case "$eg_lvl" in
+    balanced)
+      case " $eg_ag " in *" conservative "*) eg_out=conservative ;; esac
+      ;;
+    extreme)
+      case " $eg_ag " in
+        *" powersave "*) eg_out=powersave ;;
+        *" conservative "*) eg_out=conservative ;;
+      esac
+      ;;
+  esac
+  printf '%s' "$eg_out"
+}
+
 # 对全部 policy 应用某一档位（集群差异化：小核压更狠、大核留余量）
 # 小核（cpuinfo_max_freq 最低的集群）跑的后台任务最多，压它收益最大；
 # 大核（最高的集群）承担前台交互，留余量避免掉帧。极限档全部压到最低。
@@ -924,23 +945,16 @@ apply_level() {
     ag=$(node_get "$pd/scaling_available_governors")
     gov=""
     if [ "$CFG_GOV_SWITCH" = "1" ]; then
-      case "$lvl" in
-        balanced)
-          case " $ag " in *" conservative "*) gov=conservative ;; esac
-          ;;
-        extreme)
-          case " $ag " in
-            *" powersave "*) gov=powersave ;;
-            *" conservative "*) gov=conservative ;;
-          esac
-          ;;
-      esac
+      gov=$(expected_governor "$lvl" "$ag")
     fi
     if [ -n "$gov" ]; then
       cur_gov=$(node_get "$pd/scaling_governor")
       if [ "$cur_gov" != "$gov" ]; then
         if backup_node "$pd/scaling_governor"; then
-          write_node "$pd/scaling_governor" "$gov"
+          if write_node "$pd/scaling_governor" "$gov"; then
+            gcheck=$(node_get "$pd/scaling_governor" | tr -d ' \t\r')
+            [ "$gcheck" = "$gov" ] || log "gov not applied: $pol expected=$gov actual=$gcheck"
+          fi
         fi
       fi
     fi
@@ -954,12 +968,22 @@ apply_level() {
     PAIRS="$PAIRS$pol $target
 "
 
-    # walt hispeed：balanced/extreme 且该 policy 仍在用 walt 时同步压低
+    # walt hispeed：balanced/extreme 且该 policy 仍在用 walt 时同步压低。
+    # 只降不升：部分机型原厂 hispeed 本来就低于目标频率（例如小核
+    # 1.34GHz、目标 1.46GHz），无条件写 target 会把 hispeed 抬高，
+    # 反而让调度更积极，违背省电目标。读不到当前值时不写。
     gnow=$(node_get "$pd/scaling_governor")
     if [ "$lvl" != "light" ] && [ "$gnow" = "walt" ] && [ -e "$pd/walt/hispeed_freq" ]; then
-      if backup_node "$pd/walt/hispeed_freq"; then
-        write_node "$pd/walt/hispeed_freq" "$target"
-      fi
+      hcur=$(node_get "$pd/walt/hispeed_freq" | tr -d ' \t\r')
+      case "$hcur" in
+        [0-9]*)
+          if [ "$target" -lt "$hcur" ] 2>/dev/null; then
+            if backup_node "$pd/walt/hispeed_freq"; then
+              write_node "$pd/walt/hispeed_freq" "$target"
+            fi
+          fi
+          ;;
+      esac
     fi
   done
 
@@ -1309,6 +1333,18 @@ decide_and_apply() {
           dmsg="$dmsg $dpol max=$dcur target=$dtgt;"
         fi
       done
+      # governor 漂移：只记日志，不回写。部分 ROM 的 walt/性能服务会在
+      # 模块写入后把 governor 改回去；强行回写会跟系统策略打架，先暴露。
+      if [ "$CFG_GOV_SWITCH" = "1" ] && [ "$eff_level" != "light" ]; then
+        for gpol in $(policy_list); do
+          gpd="$SYS_ROOT/devices/system/cpu/cpufreq/$gpol"
+          gag=$(node_get "$gpd/scaling_available_governors")
+          gegov=$(expected_governor "$eff_level" "$gag")
+          [ -n "$gegov" ] || continue
+          gcur=$(node_get "$gpd/scaling_governor" | tr -d ' \t\r')
+          [ "$gcur" = "$gegov" ] || dmsg="$dmsg gov:$gpol=$gcur->$gegov;"
+        done
+      fi
       if [ -n "$dmsg" ]; then
         log_drift "drift:$dmsg (ROM override?)"
       fi
